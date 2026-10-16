@@ -3,35 +3,37 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { ScenarioId } from '../modules/obd2-engine/types';
 import { COLORS } from '../theme/colors';
 
-/**
- * Barra de Simulación en Tiempo Real para Demostraciones Comerciales
- * Permite probar los 6 escenarios mecánicos con 1 toque sin estar enchufado a un auto.
- * Ticket: TUA-014
- */
-
 interface DemoControlBarProps {
   activeScenario: ScenarioId;
   onSelectScenario: (scenario: ScenarioId) => void;
+  visible: boolean;
+  onClose: () => void;
 }
 
-const SCENARIO_BUTTONS: { id: ScenarioId; label: string; badgeColor: string }[] = [
-  { id: 'NORMAL', label: '🟢 Auto Sano (90°C / 14.1V)', badgeColor: COLORS.safeGreen },
-  { id: 'OVERHEATING_WATER', label: '🔥 Recalentar Agua (107°C)', badgeColor: COLORS.dangerRed },
-  { id: 'DEAD_BATTERY_CRANK', label: '🪫 Batería Muerta (9.0V)', badgeColor: COLORS.warningYellow },
-  { id: 'ALTERNATOR_FAIL', label: '⚡ Falla Alternador (12.1V)', badgeColor: COLORS.dangerRed },
-  { id: 'CYLINDER_MISFIRE_P0302', label: '🔧 Falla Bobina ($75k vs $660k)', badgeColor: COLORS.warningYellow },
-  { id: 'USED_CAR_FRAUD', label: '🕵️ Fraude Auto Usado (9 km)', badgeColor: COLORS.brandCyan },
+const SCENARIO_BUTTONS: { id: ScenarioId; label: string; dotColor: string }[] = [
+  { id: 'NORMAL', label: 'Auto Sano', dotColor: COLORS.safeGreen },
+  { id: 'OVERHEATING_WATER', label: 'Recalentar Agua (107°C)', dotColor: COLORS.dangerRed },
+  { id: 'DEAD_BATTERY_CRANK', label: 'Batería Baja (9.0V)', dotColor: COLORS.warningAmberDot },
+  { id: 'ALTERNATOR_FAIL', label: 'Falla Alternador', dotColor: COLORS.dangerRed },
+  { id: 'CYLINDER_MISFIRE_P0302', label: 'Falla Bujía ($75k vs $650k)', dotColor: COLORS.warningAmberDot },
+  { id: 'USED_CAR_FRAUD', label: 'Auto Usado Adulterado', dotColor: COLORS.brandIndigo },
 ];
 
 export const DemoControlBar: React.FC<DemoControlBarProps> = ({
   activeScenario,
   onSelectScenario,
+  visible,
+  onClose,
 }) => {
+  if (!visible) return null;
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>🎛️ SIMULADOR OBD2 EN VIVO (MODO DEMO):</Text>
-        <Text style={styles.subtitle}>Tocá para simular fallas reales</Text>
+        <Text style={styles.title}>Simulador OBD2 en Vivo (Para Demos)</Text>
+        <TouchableOpacity onPress={onClose}>
+          <Text style={styles.closeBtn}>Ocultar ✕</Text>
+        </TouchableOpacity>
       </View>
       <ScrollView
         horizontal
@@ -46,12 +48,10 @@ export const DemoControlBar: React.FC<DemoControlBarProps> = ({
               onPress={() => onSelectScenario(item.id)}
               style={[
                 styles.chip,
-                isSelected && {
-                  borderColor: item.badgeColor,
-                  backgroundColor: 'rgba(255,255,255,0.09)',
-                },
+                isSelected && styles.chipActive,
               ]}
             >
+              <View style={[styles.dot, { backgroundColor: item.dotColor }]} />
               <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
                 {item.label}
               </Text>
@@ -65,41 +65,54 @@ export const DemoControlBar: React.FC<DemoControlBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#161F30',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: COLORS.surfaceWhite,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   title: {
-    color: COLORS.brandCyan,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
     color: COLORS.textSecondary,
     fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  closeBtn: {
+    color: COLORS.brandIndigo,
+    fontSize: 11,
+    fontWeight: '700',
   },
   scrollContent: {
     gap: 8,
-    paddingRight: 12,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: COLORS.cardBackground,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: COLORS.appBackground,
+    gap: 6,
+    marginRight: 6,
+  },
+  chipActive: {
+    backgroundColor: COLORS.brandIndigoSoft,
+    borderWidth: 1,
+    borderColor: COLORS.brandIndigo,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   chipText: {
     color: COLORS.textSecondary,
@@ -107,7 +120,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   chipTextActive: {
-    color: COLORS.textPrimary,
-    fontWeight: '800',
+    color: COLORS.brandIndigo,
+    fontWeight: '700',
   },
 });

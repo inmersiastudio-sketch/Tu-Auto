@@ -2,7 +2,10 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "jsx": "react-native",
     "strict": true,
     "noImplicitAny": true,
@@ -17,5 +20,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "App.tsx", "index.ts"]
+  "include": [
+    "src/**/*",
+    "App.tsx",
+    "index.ts"
+  ],
+  "extends": "expo/tsconfig.base"
 }

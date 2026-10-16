@@ -1,219 +1,269 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Car3DShowcase } from '../components/Car3DShowcase';
 import { evaluateElectricalSystem } from '../modules/electrical-guard/electricalEngine';
-import { computeOverallHealthScore, translateVehicleFaults } from '../modules/fault-translator/faultCatalog';
+import { translateVehicleFaults } from '../modules/fault-translator/faultCatalog';
 import { LiveTelemetryFrame } from '../modules/obd2-engine/types';
 import { evaluateOilAndFluids } from '../modules/oil-tracker/oilEngine';
 import { evaluateThermalSystem } from '../modules/thermal-shield/thermalEngine';
-import { COLORS, formatARS } from '../theme/colors';
-
-/**
- * Pantalla 1: Dashboard Principal "Mi Auto Hoy"
- * Monitoreo en vivo de Sistema Eléctrico, Agua/Temperatura y Desgaste Real de Aceite.
- * Ticket: TUA-012
- */
+import { CAR_PAINT_OPTIONS, COLORS, formatARS } from '../theme/colors';
 
 interface DashboardScreenProps {
   frame: LiveTelemetryFrame;
   onNavigateToScanner: () => void;
   onNavigateToWallet: () => void;
+  onToggleDemoBar: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   frame,
   onNavigateToScanner,
   onNavigateToWallet,
+  onToggleDemoBar,
 }) => {
-  const health = computeOverallHealthScore(frame);
+  const [paintIndex, setPaintIndex] = useState(0);
+  const currentPaint = CAR_PAINT_OPTIONS[paintIndex];
+
   const elec = evaluateElectricalSystem(frame);
   const thermal = evaluateThermalSystem(frame);
   const oil = evaluateOilAndFluids(frame);
   const faults = translateVehicleFaults(frame);
 
-  const getSeverityColor = (sev: 'VERDE' | 'AMARILLO' | 'ROJO') => {
-    if (sev === 'ROJO') return COLORS.dangerRed;
-    if (sev === 'AMARILLO') return COLORS.warningYellow;
-    return COLORS.safeGreen;
+  const isOverheating = thermal.severity === 'ROJO';
+  const isElecCritical = elec.alternatorSeverity === 'ROJO' || elec.batteryStatus === 'ROJO';
+  const hasAnyAlert = isOverheating || isElecCritical || faults.length > 0;
+
+  const handleCyclePaint = () => {
+    setPaintIndex((prev) => (prev + 1) % CAR_PAINT_OPTIONS.length);
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Cabecera del Vehículo + Estado de Conexión OBD2 */}
-      <View style={styles.vehicleHeader}>
-        <View>
-          <Text style={styles.vehicleTitle}>🚗 Volkswagen Gol Trend 1.6</Text>
-          <Text style={styles.vehicleSub}>
-            Odómetro: {frame.odometerKm.toLocaleString('es-AR')} km • {frame.rpm} RPM
-          </Text>
-        </View>
-        <View style={styles.connectionPill}>
-          <View style={styles.greenDot} />
-          <Text style={styles.connectionText}>KIT OBD2 ACTIVO</Text>
-        </View>
-      </View>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* HERO CARD ÍNDIGO CON MODELO 3D DEL AUTO */}
+      <View
+        style={[
+          styles.heroCard,
+          isOverheating && { backgroundColor: '#B91C1C' },
+        ]}
+      >
+        {/* Fila superior: Píldora de estado + Botón de Ajustes/Simulador */}
+        <View style={styles.heroTopRow}>
+          <TouchableOpacity style={styles.connectedPill} onPress={onToggleDemoBar}>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: hasAnyAlert ? '#FBBF24' : '#34D399' },
+              ]}
+            />
+            <Text style={styles.connectedPillBold}>VW Gol 2021</Text>
+            <Text style={styles.connectedPillLight}>Conectado  ›</Text>
+          </TouchableOpacity>
 
-      {/* Banner de Sirena de Emergencia si recalienta el agua o falla el alternador */}
-      {(thermal.shouldTriggerSiren || elec.alternatorSeverity === 'ROJO') && (
-        <View style={styles.emergencyBanner}>
-          <Text style={styles.emergencyTitle}>
-            {thermal.shouldTriggerSiren ? thermal.headline : elec.alternatorHeadline}
-          </Text>
-          <Text style={styles.emergencyText}>
-            {thermal.shouldTriggerSiren
-              ? `${thermal.humanAdvice} Evitás una rotura de ${formatARS(thermal.potentialDamageIfIgnoredUsd)}.`
-              : `Costo estimado de reparación hoy: ${formatARS(elec.replacementCostUsd.min)} a ${formatARS(elec.replacementCostUsd.max)}.`}
-          </Text>
+          <TouchableOpacity style={styles.gearButton} onPress={onToggleDemoBar}>
+            <Text style={styles.gearIcon}>⚙️</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {/* Puntaje General de Salud del Auto (0 a 100%) */}
-      <View style={[styles.healthHeroCard, { borderColor: getSeverityColor(health.statusColor) }]}>
-        <View style={styles.healthScoreCircle}>
-          <Text style={[styles.healthScoreValue, { color: getSeverityColor(health.statusColor) }]}>
-            {health.score}%
-          </Text>
-          <Text style={styles.healthScoreCaption}>SALUD GENERAL</Text>
-        </View>
-        <View style={styles.healthHeroInfo}>
-          <Text style={[styles.healthStatusLabel, { color: getSeverityColor(health.statusColor) }]}>
-            {health.statusLabel}
-          </Text>
-          <Text style={styles.healthDescription}>
-            {faults.length > 0
-              ? `Se detectaron ${faults.length} problema(s) que requieren revisión para proteger tu bolsillo.`
-              : 'Motor, sistema eléctrico, agua y sensores sin fallas ocultas.'}
-          </Text>
-          {faults.length > 0 && (
-            <TouchableOpacity style={styles.inspectFaultsBtn} onPress={onNavigateToScanner}>
-              <Text style={styles.inspectFaultsBtnText}>
-                🔍 Ver qué se rompió y cuánto sale ({faults.length})
+        {/* Modelo y Color */}
+        <Text style={styles.carTitle}>Volkswagen Gol Trend</Text>
+        <Text style={styles.carSubtitle}>1.6 MSI · {currentPaint.name}</Text>
+
+        {/* Escenario 3D del Vehículo */}
+        <Car3DShowcase
+          paint={currentPaint}
+          onCyclePaint={handleCyclePaint}
+          waterTempC={thermal.tempC}
+          voltageV={frame.voltageInstantV}
+          isOverheating={isOverheating}
+          isElectricalAlert={isElecCritical}
+          hasEngineFault={faults.length > 0}
+        />
+
+        {/* Fila inferior dentro de la tarjeta Índigo */}
+        <View style={styles.heroBottomRow}>
+          <View>
+            <View style={styles.parkedRow}>
+              <View
+                style={[
+                  styles.statusDotSmall,
+                  { backgroundColor: hasAnyAlert ? '#FBBF24' : '#34D399' },
+                ]}
+              />
+              <Text style={styles.parkedTitle}>
+                {isOverheating
+                  ? '¡Temperatura Alta!'
+                  : isElecCritical
+                  ? 'Revisar Batería/Carga'
+                  : 'Todo en orden'}
               </Text>
-            </TouchableOpacity>
-          )}
+            </View>
+            <Text style={styles.locationSub}>📍 Palermo, Buenos Aires</Text>
+          </View>
+
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.updatedTitle}>Actualizado ahora</Text>
+            <Text style={styles.updatedSub}>
+              {frame.odometerKm.toLocaleString('es-AR')} km reales
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* MÓDULO 1: VIGÍA DEL SISTEMA ELÉCTRICO (Batería + Alternador) */}
-      <View style={styles.moduleCard}>
-        <View style={styles.moduleHeader}>
-          <Text style={styles.moduleTitle}>⚡ Sistema Eléctrico & Batería</Text>
-          <Text
+      {/* SECCIÓN SEGUIMIENTO (3 Tarjetas Minimalistas Lado a Lado) */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionHeaderLabel}>SEGUIMIENTO</Text>
+        <TouchableOpacity onPress={onNavigateToScanner}>
+          <Text style={styles.sectionHeaderAction}>Ver ficha completa</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.threeCardsRow}>
+        {/* Tarjeta 1: Sistema Eléctrico / Batería */}
+        <TouchableOpacity style={styles.miniCard} onPress={onNavigateToScanner}>
+          <View
             style={[
-              styles.badgePill,
+              styles.iconCircle,
               {
-                color: getSeverityColor(
-                  elec.alternatorSeverity === 'ROJO' ? 'ROJO' : elec.batteryStatus
-                ),
+                backgroundColor: isElecCritical
+                  ? COLORS.dangerRedPastel
+                  : COLORS.safeGreenPastel,
               },
             ]}
           >
-            {elec.batterySohPercent}% Vida Útil
-          </Text>
-        </View>
-
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>CARGA ALTERNADOR</Text>
-            <Text
+            <Text style={styles.iconEmoji}>⚡</Text>
+          </View>
+          <Text style={styles.miniCardTitle}>Eléctrico</Text>
+          <View style={styles.miniStatusRow}>
+            <View
               style={[
-                styles.metricBigNumber,
-                { color: getSeverityColor(elec.alternatorSeverity) },
-              ]}
-            >
-              {frame.voltageInstantV.toFixed(2)} V
-            </Text>
-            <Text style={styles.metricHint}>Normal: 13.8V a 14.4V</Text>
-          </View>
-
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>CAÍDA EN ARRANQUE</Text>
-            <Text
-              style={[styles.metricBigNumber, { color: getSeverityColor(elec.batteryStatus) }]}
-            >
-              {frame.lastCrankingMinV.toFixed(2)} V
-            </Text>
-            <Text style={styles.metricHint}>Mínimo seguro: &gt; 9.6V</Text>
-          </View>
-        </View>
-
-        <Text style={styles.humanSummaryTitle}>{elec.batteryHeadline}</Text>
-        <Text style={styles.humanSummaryBody}>{elec.batteryExplanation}</Text>
-        <Text style={[styles.humanSummaryBody, { marginTop: 4, color: COLORS.brandCyan }]}>
-          {elec.alternatorHeadline}
-        </Text>
-      </View>
-
-      {/* MÓDULO 2: ESCUDO TÉRMICO Y CONTROL DE "AGUA" */}
-      <View style={styles.moduleCard}>
-        <View style={styles.moduleHeader}>
-          <Text style={styles.moduleTitle}>🌡️ Temperatura de Agua (Real ECU)</Text>
-          <Text style={[styles.badgePill, { color: getSeverityColor(thermal.severity) }]}>
-            {thermal.tempC}°C
-          </Text>
-        </View>
-
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>SENSOR DIGITAL REAL</Text>
-            <Text
-              style={[styles.metricBigNumber, { color: getSeverityColor(thermal.severity) }]}
-            >
-              {thermal.tempC} °C
-            </Text>
-            <Text style={styles.metricHint}>Óptimo: 88°C a 96°C</Text>
-          </View>
-
-          <View style={styles.metricBox}>
-            <Text style={styles.metricLabel}>VELOCIDAD TÉRMICA</Text>
-            <Text
-              style={[
-                styles.metricBigNumber,
+                styles.miniDot,
                 {
-                  color: thermal.suspectedWaterLoss ? COLORS.dangerRed : COLORS.textPrimary,
+                  backgroundColor: isElecCritical
+                    ? COLORS.dangerRed
+                    : COLORS.safeGreen,
                 },
               ]}
-            >
-              +{thermal.slopeCPerMin.toFixed(1)}°/min
+            />
+            <Text style={styles.miniStatusText} numberOfLines={1}>
+              {elec.alternatorSeverity === 'ROJO'
+                ? 'Sin carga'
+                : elec.batteryStatus === 'ROJO'
+                ? 'Bat. baja'
+                : `${elec.batterySohPercent}% firme`}
             </Text>
-            <Text style={styles.metricHint}>Detecta manguera rota</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <Text style={styles.humanSummaryTitle}>{thermal.headline}</Text>
-        <Text style={styles.humanSummaryBody}>{thermal.humanAdvice}</Text>
-      </View>
-
-      {/* MÓDULO 3: PREDICTOR INTELIGENTE DE CAMBIO DE ACEITE */}
-      <View style={styles.moduleCard}>
-        <View style={styles.moduleHeader}>
-          <Text style={styles.moduleTitle}>🛢️ Desgaste Real de Aceite y Filtros</Text>
-          <Text style={[styles.badgePill, { color: getSeverityColor(oil.severity) }]}>
-            Quedan ~{oil.estimatedDaysRemaining} días
-          </Text>
-        </View>
-
-        {/* Barra de vida útil */}
-        <View style={styles.progressBarBg}>
+        {/* Tarjeta 2: Agua y Temperatura */}
+        <TouchableOpacity style={styles.miniCard} onPress={onNavigateToScanner}>
           <View
             style={[
-              styles.progressBarFill,
+              styles.iconCircle,
               {
-                width: `${oil.oilLifeRemainingPercent}%`,
-                backgroundColor: getSeverityColor(oil.severity),
+                backgroundColor: isOverheating
+                  ? COLORS.dangerRedPastel
+                  : COLORS.safeGreenPastel,
               },
             ]}
-          />
-        </View>
+          >
+            <Text style={styles.iconEmoji}>🌡️</Text>
+          </View>
+          <Text style={styles.miniCardTitle}>Agua</Text>
+          <View style={styles.miniStatusRow}>
+            <View
+              style={[
+                styles.miniDot,
+                {
+                  backgroundColor: isOverheating
+                    ? COLORS.dangerRed
+                    : COLORS.safeGreen,
+                },
+              ]}
+            />
+            <Text style={styles.miniStatusText} numberOfLines={1}>
+              {thermal.tempC}°C {isOverheating ? '¡Alta!' : 'Normal'}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
-        <Text style={styles.humanSummaryTitle}>{oil.headline}</Text>
-        <Text style={styles.humanSummaryBody}>{oil.humanExplanation}</Text>
-
-        <TouchableOpacity style={styles.walletLinkBtn} onPress={onNavigateToWallet}>
-          <Text style={styles.walletLinkBtnText}>
-            💸 Costo estimado del próximo service: {formatARS(oil.serviceEstimatedCostUsd)} (Ver plan de ahorro)
-          </Text>
+        {/* Tarjeta 3: Próximo Service (Aceite) */}
+        <TouchableOpacity style={styles.miniCard} onPress={onNavigateToWallet}>
+          <View
+            style={[
+              styles.iconCircle,
+              { backgroundColor: COLORS.warningAmberPastel },
+            ]}
+          >
+            <Text style={styles.iconEmoji}>🛢️</Text>
+          </View>
+          <Text style={styles.miniCardTitle}>Próximo service</Text>
+          <View style={styles.miniStatusRow}>
+            <View
+              style={[
+                styles.miniDot,
+                { backgroundColor: COLORS.warningAmberDot },
+              ]}
+            />
+            <Text style={styles.miniStatusText} numberOfLines={1}>
+              En {oil.estimatedDaysRemaining || 18} días
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
+
+      {/* TARJETA INFERIOR DINÁMICA (Mantenimiento o Alerta Prioritaria sin agobiar) */}
+      {hasAnyAlert ? (
+        <TouchableOpacity
+          style={styles.alertBannerCard}
+          onPress={onNavigateToScanner}
+        >
+          <View style={styles.alertIconBox}>
+            <Text style={{ fontSize: 18 }}>⚠️</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.alertBannerLabel}>ATENCIÓN EN TU AUTO</Text>
+            <Text style={styles.alertBannerTitle} numberOfLines={1}>
+              {isOverheating
+                ? 'Temperatura de agua en zona peligrosa'
+                : elec.alternatorSeverity === 'ROJO'
+                ? 'El alternador dejó de cargar la batería'
+                : elec.batteryStatus === 'ROJO'
+                ? 'Tu batería está al límite para arrancar'
+                : faults[0]?.humanTitle}
+            </Text>
+            <Text style={styles.alertBannerSub}>
+              Tocá para ver qué es y cuánto cuesta arreglarlo hoy
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.maintenanceBannerCard}
+          onPress={onNavigateToWallet}
+        >
+          <View style={styles.maintenanceIconBox}>
+            <Text style={{ fontSize: 18 }}>🕒</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.maintenanceBannerLabel}>
+              PRÓXIMO MANTENIMIENTO
+            </Text>
+            <Text style={styles.maintenanceBannerTitle}>
+              Cambio de aceite y revisión
+            </Text>
+            <Text style={styles.maintenanceBannerSub}>
+              En {oil.estimatedDaysRemaining || 18} días · Estimado{' '}
+              {formatARS(oil.serviceEstimatedCostUsd)}
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 };
@@ -221,204 +271,241 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.appBackground,
   },
   content: {
-    padding: 16,
-    paddingBottom: 36,
+    paddingHorizontal: 20,
+    paddingBottom: 28,
   },
-  vehicleHeader: {
+  heroCard: {
+    backgroundColor: COLORS.heroBgPrimary,
+    borderRadius: 32,
+    padding: 22,
+    marginBottom: 22,
+    overflow: 'hidden',
+  },
+  heroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14,
   },
-  vehicleTitle: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  vehicleSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  connectionPill: {
+  connectedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.safeGreenBg,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.safeGreen,
+    backgroundColor: COLORS.heroPillBg,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 24,
+    gap: 7,
   },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.safeGreen,
-    marginRight: 6,
+  statusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
   },
-  connectionText: {
-    color: COLORS.safeGreen,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  emergencyBanner: {
-    backgroundColor: COLORS.dangerRedBg,
-    borderWidth: 2,
-    borderColor: COLORS.dangerRed,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
-  },
-  emergencyTitle: {
-    color: COLORS.dangerRed,
-    fontSize: 16,
-    fontWeight: '900',
-    marginBottom: 4,
-  },
-  emergencyText: {
-    color: COLORS.textPrimary,
+  connectedPillBold: {
+    color: COLORS.textWhite,
     fontSize: 13,
-    lineHeight: 19,
+    fontWeight: '800',
   },
-  healthHeroCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    padding: 16,
-    marginBottom: 16,
-    gap: 14,
+  connectedPillLight: {
+    color: COLORS.textWhiteMuted,
+    fontSize: 13,
+    fontWeight: '500',
   },
-  healthScoreCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: COLORS.cardElevated,
+  gearButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.heroPillBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  healthScoreValue: {
-    fontSize: 26,
-    fontWeight: '900',
+  gearIcon: {
+    fontSize: 16,
   },
-  healthScoreCaption: {
-    color: COLORS.textSecondary,
-    fontSize: 8,
+  carTitle: {
+    color: COLORS.textWhite,
+    fontSize: 20,
     fontWeight: '800',
+  },
+  carSubtitle: {
+    color: COLORS.textWhiteMuted,
+    fontSize: 13,
     marginTop: 2,
   },
-  healthHeroInfo: {
-    flex: 1,
+  heroBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: 6,
   },
-  healthStatusLabel: {
-    fontSize: 16,
+  parkedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDotSmall: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  parkedTitle: {
+    color: COLORS.textWhite,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 4,
   },
-  healthDescription: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  inspectFaultsBtn: {
-    marginTop: 10,
-    backgroundColor: COLORS.warningYellow,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-  },
-  inspectFaultsBtnText: {
-    color: '#111827',
+  locationSub: {
+    color: COLORS.textWhiteMuted,
     fontSize: 12,
-    fontWeight: '900',
+    marginTop: 3,
   },
-  moduleCard: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    marginBottom: 16,
+  updatedTitle: {
+    color: COLORS.textWhite,
+    fontSize: 14,
+    fontWeight: '800',
   },
-  moduleHeader: {
+  updatedSub: {
+    color: COLORS.textWhiteMuted,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  moduleTitle: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
+  sectionHeaderLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
     fontWeight: '800',
+    letterSpacing: 0.8,
   },
-  badgePill: {
+  sectionHeaderAction: {
+    color: COLORS.brandIndigo,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
-  metricsGrid: {
+  threeCardsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  metricBox: {
+  miniCard: {
     flex: 1,
-    backgroundColor: COLORS.cardElevated,
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: COLORS.surfaceWhite,
+    borderRadius: 24,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
   },
-  metricLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 10,
-    fontWeight: '800',
-    marginBottom: 4,
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
-  metricBigNumber: {
-    fontSize: 22,
-    fontWeight: '900',
+  iconEmoji: {
+    fontSize: 18,
   },
-  metricHint: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  humanSummaryTitle: {
-    color: COLORS.textPrimary,
+  miniCardTitle: {
+    color: COLORS.textDark,
     fontSize: 14,
     fontWeight: '800',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  humanSummaryBody: {
+  miniStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  miniDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  miniStatusText: {
     color: COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  progressBarBg: {
-    height: 10,
-    backgroundColor: COLORS.cardElevated,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  walletLinkBtn: {
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.brandCyanMuted,
-    borderRadius: 10,
-  },
-  walletLinkBtnText: {
-    color: COLORS.brandCyan,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
+  },
+  maintenanceBannerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.warningAmberCardBg,
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.warningAmberBorder,
+    gap: 14,
+  },
+  maintenanceIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: '#FDE8C8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maintenanceBannerLabel: {
+    color: COLORS.warningAmber,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  maintenanceBannerTitle: {
+    color: COLORS.textDark,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  maintenanceBannerSub: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  alertBannerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.dangerRedCardBg,
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.dangerRedBorder,
+    gap: 14,
+  },
+  alertIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: COLORS.dangerRedPastel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertBannerLabel: {
+    color: COLORS.dangerRed,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  alertBannerTitle: {
+    color: COLORS.textDark,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  alertBannerSub: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  chevron: {
+    color: COLORS.textSecondary,
+    fontSize: 22,
+    fontWeight: '400',
   },
 });
