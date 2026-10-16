@@ -32,7 +32,7 @@ export function evaluateFleetVehicleAbuse(input: FleetTelemetryInput): FleetOwne
       driverName: input.driverName,
       alertType: 'TAMPER_DISCONNECTED',
       severity: 'ROJO',
-      whatsappMessageToOwner: `🚨 [FLOTA TU-AUTO] El chofer ${input.driverName} desenchufó el Kit OBD2 del vehículo ${input.plate} hace ${input.minutesSinceLastPing} min.`,
+      whatsappMessageToOwner: `[ALERTA FLOTA] El chofer ${input.driverName} desenchufó el Kit OBD2 del vehículo ${input.plate} hace ${input.minutesSinceLastPing} min.`,
     });
   }
 
@@ -42,7 +42,7 @@ export function evaluateFleetVehicleAbuse(input: FleetTelemetryInput): FleetOwne
       driverName: input.driverName,
       alertType: 'OVERHEATING',
       severity: 'ROJO',
-      whatsappMessageToOwner: `🔥 [PELIGRO MOTOR] El vehículo ${input.plate} (${input.driverName}) está recalentando agua a ${input.coolantTempC}°C. Llamar al chofer de inmediato.`,
+      whatsappMessageToOwner: `[PELIGRO MOTOR] El vehículo ${input.plate} (${input.driverName}) está recalentando agua a ${input.coolantTempC}°C. Llamar al chofer de inmediato.`,
     });
   }
 
@@ -52,7 +52,7 @@ export function evaluateFleetVehicleAbuse(input: FleetTelemetryInput): FleetOwne
       driverName: input.driverName,
       alertType: 'HIGH_RPM_ABUSE',
       severity: 'AMARILLO',
-      whatsappMessageToOwner: `⚠️ [EXCESO DE RPM] El vehículo ${input.plate} (${input.driverName}) está siendo exigido a ${input.rpm} RPM.`,
+      whatsappMessageToOwner: `[EXCESO DE RPM] El vehículo ${input.plate} (${input.driverName}) está siendo exigido a ${input.rpm} RPM.`,
     });
   }
 
@@ -62,7 +62,7 @@ export function evaluateFleetVehicleAbuse(input: FleetTelemetryInput): FleetOwne
       driverName: input.driverName,
       alertType: 'ALTERNATOR_FAILURE',
       severity: 'ROJO',
-      whatsappMessageToOwner: `⚡ [FALLA ELÉCTRICA] El alternador del auto ${input.plate} dejó de cargar (${input.voltageV}V). Riesgo de quedar detenido.`,
+      whatsappMessageToOwner: `[FALLA ELÉCTRICA] El alternador del auto ${input.plate} dejó de cargar (${input.voltageV}V). Riesgo de quedar detenido.`,
     });
   }
 
@@ -72,7 +72,7 @@ export function evaluateFleetVehicleAbuse(input: FleetTelemetryInput): FleetOwne
       driverName: input.driverName,
       alertType: 'OIL_OVERDUE',
       severity: 'AMARILLO',
-      whatsappMessageToOwner: `🛢️ [SERVICE VENCIDO] Al auto ${input.plate} le queda solo ${input.oilLifePercent}% de vida útil de aceite por uso intensivo en tráfico.`,
+      whatsappMessageToOwner: `[SERVICE VENCIDO] Al auto ${input.plate} le queda solo ${input.oilLifePercent}% de vida útil de aceite por uso intensivo en tráfico.`,
     });
   }
 

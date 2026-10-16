@@ -1,126 +1,179 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import {
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Flame,
+  BatteryWarning,
+  Zap,
+  AlertTriangle,
+  ShieldAlert,
+  LucideIcon,
+} from 'lucide-react-native';
 import { ScenarioId } from '../modules/obd2-engine/types';
-import { COLORS } from '../theme/colors';
+import { Colors } from '../theme/colors';
 
-interface DemoControlBarProps {
+interface Props {
   activeScenario: ScenarioId;
   onSelectScenario: (scenario: ScenarioId) => void;
-  visible: boolean;
-  onClose: () => void;
 }
 
-const SCENARIO_BUTTONS: { id: ScenarioId; label: string; dotColor: string }[] = [
-  { id: 'NORMAL', label: 'Auto Sano', dotColor: COLORS.safeGreen },
-  { id: 'OVERHEATING_WATER', label: 'Recalentar Agua (107°C)', dotColor: COLORS.dangerRed },
-  { id: 'DEAD_BATTERY_CRANK', label: 'Batería Baja (9.0V)', dotColor: COLORS.warningAmberDot },
-  { id: 'ALTERNATOR_FAIL', label: 'Falla Alternador', dotColor: COLORS.dangerRed },
-  { id: 'CYLINDER_MISFIRE_P0302', label: 'Falla Bujía ($75k vs $650k)', dotColor: COLORS.warningAmberDot },
-  { id: 'USED_CAR_FRAUD', label: 'Auto Usado Adulterado', dotColor: COLORS.brandIndigo },
+const PRESETS: {
+  id: ScenarioId;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { id: 'NORMAL', label: 'Auto al 100%', Icon: CheckCircle2 },
+  { id: 'CYLINDER_MISFIRE_P0302', label: 'Bujía ($75k)', Icon: Zap },
+  { id: 'OVERHEATING_WATER', label: 'Agua 105°C', Icon: Flame },
+  { id: 'ALTERNATOR_FAIL', label: 'Alternador', Icon: BatteryWarning },
+  { id: 'DEAD_BATTERY_CRANK', label: 'Batería débil', Icon: AlertTriangle },
+  { id: 'USED_CAR_FRAUD', label: 'Fraude Usado', Icon: ShieldAlert },
 ];
 
-export const DemoControlBar: React.FC<DemoControlBarProps> = ({
+export const DemoControlBar: React.FC<Props> = ({
   activeScenario,
   onSelectScenario,
-  visible,
-  onClose,
 }) => {
-  if (!visible) return null;
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Simulador OBD2 en Vivo (Para Demos)</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.closeBtn}>Ocultar ✕</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+    <View style={styles.wrapper}>
+      <TouchableOpacity
+        style={styles.togglePill}
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.85}
       >
-        {SCENARIO_BUTTONS.map((item) => {
-          const isSelected = activeScenario === item.id;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => onSelectScenario(item.id)}
-              style={[
-                styles.chip,
-                isSelected && styles.chipActive,
-              ]}
-            >
-              <View style={[styles.dot, { backgroundColor: item.dotColor }]} />
-              <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        <View style={styles.leftRow}>
+          <View style={styles.iconCircle}>
+            <SlidersHorizontal size={13} color={Colors.brandPrimary} />
+          </View>
+          <Text style={styles.toggleText}>
+            Simulador OBD2:{' '}
+            <Text style={styles.activeLabel}>
+              {PRESETS.find((p) => p.id === activeScenario)?.label}
+            </Text>
+          </Text>
+        </View>
+        <View style={styles.expandRight}>
+          <Text style={styles.expandHint}>
+            {expanded ? 'Ocultar' : 'Simular escenario'}
+          </Text>
+          {expanded ? (
+            <ChevronUp size={15} color={Colors.brandPrimary} />
+          ) : (
+            <ChevronDown size={15} color={Colors.brandPrimary} />
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {expanded && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsScroll}
+        >
+          {PRESETS.map((p) => {
+            const active = activeScenario === p.id;
+            const IconComponent = p.Icon;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => onSelectScenario(p.id)}
+              >
+                <IconComponent
+                  size={14}
+                  color={active ? '#FFFFFF' : Colors.textSecondary}
+                />
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {p.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surfaceWhite,
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
+  wrapper: {
+    marginBottom: 14,
   },
-  headerRow: {
+  togglePill: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: Colors.bgElevated,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
-  title: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  closeBtn: {
-    color: COLORS.brandIndigo,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  scrollContent: {
+  leftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  iconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleText: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  activeLabel: {
+    color: Colors.textPrimary,
+    fontWeight: '700',
+  },
+  expandRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  expandHint: {
+    color: Colors.brandPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chipsScroll: {
+    gap: 8,
+    paddingTop: 10,
+    paddingBottom: 2,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: COLORS.appBackground,
     gap: 6,
-    marginRight: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   chipActive: {
-    backgroundColor: COLORS.brandIndigoSoft,
-    borderWidth: 1,
-    borderColor: COLORS.brandIndigo,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
   },
   chipText: {
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   chipTextActive: {
-    color: COLORS.brandIndigo,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 });

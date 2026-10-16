@@ -57,11 +57,11 @@ export function evaluateElectricalSystem(frame: LiveTelemetryFrame): ElectricalH
   } else if (frame.voltageInstantV < 13.2) {
     alternatorStatus = 'BAJA_CARGA';
     alternatorSeverity = 'ROJO';
-    alternatorHeadline = `🚨 ¡PELIGRO! El Alternador NO carga (${frame.voltageInstantV.toFixed(2)}V). Estás andando solo con la batería; el auto se va a apagar en ~30 min.`;
+    alternatorHeadline = `¡PELIGRO! El Alternador NO carga (${frame.voltageInstantV.toFixed(2)}V). Estás andando solo con la batería; el auto se va a apagar en ~30 min.`;
   } else if (frame.voltageInstantV > 14.8) {
     alternatorStatus = 'SOBRECARGA_PELIGROSA';
     alternatorSeverity = 'ROJO';
-    alternatorHeadline = `🚨 ¡SOBRECARGA! Regulador en corto (${frame.voltageInstantV.toFixed(2)}V). Riesgo de quemar la computadora o hervir la batería.`;
+    alternatorHeadline = `¡SOBRECARGA! Regulador en corto (${frame.voltageInstantV.toFixed(2)}V). Riesgo de quemar la computadora o hervir la batería.`;
   } else if (frame.voltageInstantV < 13.6) {
     alternatorStatus = 'BAJA_CARGA';
     alternatorSeverity = 'AMARILLO';

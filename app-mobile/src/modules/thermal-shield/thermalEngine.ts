@@ -34,8 +34,8 @@ export function evaluateThermalSystem(frame: LiveTelemetryFrame): ThermalHealthR
       shouldTriggerSiren: true,
       suspectedWaterLoss,
       headline: suspectedWaterLoss && temp < 102
-        ? `🚨 ¡SUBIDA BRUSCA DE TEMPERATURA (${temp}°C)! Posible pérdida de agua`
-        : `🚨 ¡PELIGRO DE RECALENTAMIENTO (${temp}°C)! Frená ahora`,
+        ? `¡SUBIDA BRUSCA DE TEMPERATURA (${temp}°C)! Posible pérdida de agua`
+        : `¡PELIGRO DE RECALENTAMIENTO (${temp}°C)! Frená ahora`,
       humanAdvice:
         'La temperatura del agua está subiendo a velocidad peligrosa (+9°C/min). Aunque la aguja del tablero parezca clavada en 90°C, estacioná ya mismo y apagá el motor para no soplar la junta de tapa de cilindros. ¡NO abras la tapa del bidón de agua en caliente!',
       potentialDamageIfIgnoredUsd: 950, // Soplar junta y rectificar tapa de cilindros

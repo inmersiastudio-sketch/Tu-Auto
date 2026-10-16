@@ -28,12 +28,14 @@ Antes de tomar decisiones de diseño, base de datos o hardware, consultá estos 
 * 📄 [`docs/07-finanzas-y-plan-comercial.md`](./docs/07-finanzas-y-plan-comercial.md): Unit economics, costos de servidor y estrategia comercial.
 * 📄 [`docs/08-especificacion-features-y-desarrollo.md`](./docs/08-especificacion-features-y-desarrollo.md): Contratos TypeScript (`IOBD2DataSource`), Historias de Usuario, Criterios de Aceptación y diseño de las 4 pestañas.
 * 📄 [`docs/09-gestion-proyecto-y-roadmap-sprints.md`](./docs/09-gestion-proyecto-y-roadmap-sprints.md): Plataforma de gestión ágil (Linear / GitHub Projects + `BACKLOG.md`) y plan de 4 Sprints.
+* 📄 [`docs/10-buenas-practicas-seguridad-y-testing.md`](./docs/10-buenas-practicas-seguridad-y-testing.md): Estándares de seguridad (Zero-Trust RLS), anti-redundancia, idempotencia y testing automatizado.
+* 📄 [`docs/11-sistema-diseno-kinetic-telematics.md`](./docs/11-sistema-diseno-kinetic-telematics.md): Sistema de diseño **Kinetic Telematics** (Google Stitch), tokens visuales, SVG del vehículo y cero emojis.
 
 ---
 
 ## 3. Skills Especializadas Disponibles en el Proyecto (`.agents/skills/`)
 
-Este repositorio cuenta con **3 Skills locales** que los agentes deben activar según la tarea que estén ejecutando:
+Este repositorio cuenta con **4 Skills locales** que los agentes deben activar según la tarea que estén ejecutando:
 
 * 📋 **[`agile-backlog-manager`](./.agents/skills/agile-backlog-manager/SKILL.md)**
   * **Cuándo usarla:** **SIEMPRE** al comenzar y al terminar de programar cualquier feature o módulo, para marcar el avance en [`BACKLOG.md`](./BACKLOG.md) usando los códigos `TUA-XXX`.
@@ -41,6 +43,8 @@ Este repositorio cuenta con **3 Skills locales** que los agentes deben activar s
   * **Cuándo usarla:** Siempre que programes la comunicación Bluetooth BLE, el simulador de telemetría (`MockOBD2Provider`), el parser de respuestas hexadecimales del auto, el firmware del ESP32-C3 o las fórmulas de voltaje/agua/aceite.
 * 🔧 **[`mecanica-y-costos-latam`](./.agents/skills/mecanica-y-costos-latam/SKILL.md)**
   * **Cuándo usarla:** Siempre que redactes textos de la interfaz, traduzcas códigos de falla (DTC), armes presupuestos de reparación ("Escudo Anti-Estafas") o diseñes alertas preventivas para conductores y dueños de flotas.
+* 🎨 **[`kinetic-telematics-ui`](./.agents/skills/kinetic-telematics-ui/SKILL.md)**
+  * **Cuándo usarla:** **SIEMPRE** que diseñes o modifiques pantallas, tarjetas, iconos o estilos en `app-mobile/`. Define el sistema de diseño **Kinetic Telematics** (exportado desde Google Stitch), la paleta Daylight-First (`#FCF8FF`) + Electric Indigo (`#4338CA`) y la **prohibición absoluta de emojis** en favor de librerías de iconos vectoriales (`lucide-react-native` / `react-native-svg`).
 
 ---
 
@@ -54,15 +58,16 @@ c:\Proyectos\Tu-Auto\
 ├── BACKLOG.md                       # Tablero Kanban y Sprints en vivo (TUA-001 a TUA-028)
 ├── README.md                        # Portal principal del proyecto
 ├── .agents/
-│   └── skills/                      # Skills técnicas, de negocio y gestión ágil
+│   └── skills/                      # Skills técnicas, de negocio, UI y gestión ágil
 │       ├── agile-backlog-manager/
 │       ├── obd2-elm327-protocol/
-│       └── mecanica-y-costos-latam/
+│       ├── mecanica-y-costos-latam/
+│       └── kinetic-telematics-ui/
 ├── docs/                            # Documentación de producto, hardware, DB, features y finanzas
 │   └── assets/                      # Imágenes y planos técnicos del kit y hardware
 ├── app-mobile/                      # Aplicación React Native (Expo + TypeScript)
 │   ├── src/
-│   │   ├── components/              # Componentes visuales (Semáforo, Relojes, Tarjetas de Costo)
+│   │   ├── components/              # Componentes visuales (Car3DShowcase SVG, Tarjetas, DemoBar)
 │   │   ├── modules/
 │   │   │   ├── obd2-engine/         # Conexión BLE real + Simulador Virtual en tiempo real
 │   │   │   ├── electrical-guard/    # Algoritmo de Batería (Cranking) y Alternador
@@ -70,7 +75,7 @@ c:\Proyectos\Tu-Auto\
 │   │   │   ├── oil-tracker/         # Cálculo de desgaste de aceite por km + horas de tráfico
 │   │   │   └── fault-translator/    # Traductor de DTCs y Escudo Anti-Estafas
 │   │   ├── db-local/                # Esquema y caché SQLite Offline-First
-│   │   └── screens/                 # Pantallas (Dashboard, Escáner, Billetera, Flotas B2B)
+│   │   └── screens/                 # Pantallas (Resumen, Salud del Auto, Mi Bolsillo)
 ├── firmware-esp32/                  # Código C++ / Arduino para el Hardware Propio "Tu-Auto V1"
 └── supabase/                        # Migraciones SQL y Edge Functions
 ```
@@ -86,6 +91,7 @@ c:\Proyectos\Tu-Auto\
    * Siempre debe existir un **Modo Simulación (`MockOBD2DataSource`)** activable con un toque desde la app para que el fundador pueda demostrar en vivo cómo sube la temperatura del agua, cómo cae la batería en el arranque o cómo aparece una falla con su costo sin necesitar estar enchufado a un auto real.
 3. **Arquitectura Offline-First:**
    * Las alertas críticas (Recalentamiento de agua $\ge 102^\circ\text{C}$ o Falla de alternador $< 13.0\text{V}$) **jamás** deben esperar una llamada HTTP al servidor. Se evalúan localmente en el dispositivo móvil en menos de `50 ms`.
-4. **Diseño Visual (UI/UX):**
-   * Tema oscuro automotriz moderno (`#0B0F19` fondo principal, `#111827` tarjetas, `#00E5FF` azul eléctrico de marca, `#10B981` verde seguro, `#F59E0B` amarillo preventivo, `#EF4444` rojo peligro inminente).
-   * Tipografía grande y legible a un brazo de distancia (pensado para el soporte del celular en el torpedo del auto).
+4. **Diseño Visual "Kinetic Telematics" y CERO EMOJIS (UI/UX):**
+   * Seguir estrictamente la skill [`kinetic-telematics-ui`](./.agents/skills/kinetic-telematics-ui/SKILL.md): estética *Daylight-First* (`#FCF8FF` fondo principal, `#FFFFFF` tarjetas flotantes, Hero Card Índigo `#6366F1` $\rightarrow$ `#372ABF`, texto `#181445`).
+   * **PROHIBIDO USAR EMOJIS EN LA UI:** Jamás renderizar caracteres emoji (`🚗`, `⚡`, `🌡️`, `🛢️`, `💰`) en componentes de React Native. Usar exclusivamente iconos vectoriales de `lucide-react-native` y gráficos `react-native-svg`.
+

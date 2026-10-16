@@ -1,104 +1,62 @@
 /**
- * Sistema de Diseño Minimalista "Clean Indigo & Pearl" — Tu-Auto
- * Inspirado en el diseño de referencia: cero ruido visual, tarjetas blancas limpias,
- * protagonista 3D sobre tarjeta Índigo y mucha paz mental para el conductor.
+ * Paleta Oficial "Kinetic Telematics" (Google Stitch Export)
+ * Cero ruido visual, Daylight-First (#FCF8FF), Hero Indigo (#4338CA) y Cero Emojis.
  */
-export const COLORS = {
-  // Fondos principales (Light Minimalist Mode)
-  appBackground: '#F4F6FB',
-  surfaceWhite: '#FFFFFF',
-  surfaceSubtle: '#EEF1F8',
-  borderLight: '#E5E9F2',
+export const Colors = {
+  // Superficies Tonal Layering (No-Line Rule)
+  bgPrimary: '#FCF8FF', // Base Surface Canvas
+  bgCard: '#FFFFFF', // Surface Container Lowest (Tarjetas principales)
+  bgElevated: '#F6F2FF', // Surface Container Low (Fondos secundarios suaves)
+  bgContainer: '#F0ECFF', // Surface Container
+  bgHigh: '#E9E5FF', // Surface Container High (Píldoras de estado)
+  bgHighest: '#E3DFFF', // Surface Container Highest (Barras de progreso base)
 
-  // Hero Card Índigo
-  heroBgPrimary: '#584CF4',
-  heroBgSecondary: '#6E62F7',
-  heroPillBg: 'rgba(255, 255, 255, 0.16)',
-  heroCircleRing: 'rgba(255, 255, 255, 0.07)',
+  // Hero Indigo Automotriz (Kinetic Telematics)
+  heroIndigoStart: '#6366F1',
+  heroIndigoMid: '#5148D7',
+  heroIndigoEnd: '#372ABF',
+  heroIndigoDeep: '#1E1B4B',
 
-  // Textos
-  textDark: '#131726',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  textWhite: '#FFFFFF',
-  textWhiteMuted: 'rgba(255, 255, 255, 0.78)',
+  // Marca y Acción Primaria
+  brandPrimary: '#4338CA', // Primary Container CTA
+  brandPrimaryDark: '#2A14B4', // Primary Deep Indigo
+  brandLight: '#E0E0FF', // Primary Fixed
 
-  // Marca & Navegación
-  brandIndigo: '#4F46E5',
-  brandIndigoSoft: '#ECEBFF',
-  avatarDark: '#1E2238',
+  // Tipografía Editorial (Deep Indigo Charcoal — Nunca negro #000000 puro)
+  textPrimary: '#181445', // On-Surface
+  textSecondary: '#464554', // On-Surface-Variant
+  textMuted: '#777586', // Outline
+  textOnHero: '#FFFFFF',
+  textSubtleOnHero: '#E0E0FF',
 
-  // Semáforo Pastel & Acentos Limpios
+  // Semáforo Automotriz (Esmeralda, Ámbar y Coral)
   safeGreen: '#10B981',
-  safeGreenPastel: '#E3F9F1',
-  warningAmber: '#D97706',
-  warningAmberDot: '#F59E0B',
-  warningAmberPastel: '#FFF5E5',
-  warningAmberCardBg: '#FDF6EA',
-  warningAmberBorder: '#F7E3C0',
+  safeGreenDark: '#047857',
+  safeGreenBg: '#ECFDF5',
+  safeGreenBorder: '#A7F3D0',
+
+  warnAmber: '#F59E0B',
+  warnAmberDark: '#B45309',
+  warnAmberText: '#78350F',
+  warnAmberBg: '#FFFBEB',
+  warnAmberBorder: '#FDE68A',
+
   dangerRed: '#EF4444',
-  dangerRedPastel: '#FEE2E2',
-  dangerRedCardBg: '#FEF2F2',
+  dangerRedDark: '#B91C1C',
+  dangerRedBg: '#FEF2F2',
   dangerRedBorder: '#FECACA',
 
-  // Compatibilidad con imports previos
-  background: '#F4F6FB',
-  cardBackground: '#FFFFFF',
-  cardElevated: '#F8FAFC',
-  border: '#E5E9F2',
-  brandCyan: '#4F46E5',
-  brandCyanMuted: '#ECEBFF',
-  textPrimary: '#131726',
-  safeGreenBg: '#E3F9F1',
-  warningYellow: '#D97706',
-  warningYellowBg: '#FFF5E5',
-  dangerRedBg: '#FEE2E2',
-  coldBlue: '#0284C7',
-  coldBlueBg: '#E0F2FE',
+  infoSky: '#0284C7',
+  infoSkyBg: '#F0F9FF',
+
+  borderSubtle: 'rgba(199, 196, 215, 0.25)', // Ghost Border (#C7C4D7 al 25%)
 } as const;
 
-export interface CarPaintOption {
-  id: string;
-  name: string;
-  bodyMain: string;
-  bodyDark: string;
-  bodyHighlight: string;
-}
+export const COLORS = Colors;
 
-export const CAR_PAINT_OPTIONS: CarPaintOption[] = [
-  {
-    id: 'indigo',
-    name: 'Azul Índigo',
-    bodyMain: '#28266E',
-    bodyDark: '#1B1952',
-    bodyHighlight: '#4845A3',
-  },
-  {
-    id: 'silver',
-    name: 'Gris Platino',
-    bodyMain: '#475569',
-    bodyDark: '#1E293B',
-    bodyHighlight: '#94A3B8',
-  },
-  {
-    id: 'crimson',
-    name: 'Rojo Flash',
-    bodyMain: '#B91C1C',
-    bodyDark: '#7F1D1D',
-    bodyHighlight: '#EF4444',
-  },
-  {
-    id: 'pearl',
-    name: 'Blanco Cristal',
-    bodyMain: '#E2E8F0',
-    bodyDark: '#94A3B8',
-    bodyHighlight: '#FFFFFF',
-  },
-];
+export const DEFAULT_EXCHANGE_RATE_ARS = 1200;
 
-export const DEFAULT_EXCHANGE_RATE_ARS = 1150;
-
-export function formatARS(amountUsd: number, exchangeRate: number = DEFAULT_EXCHANGE_RATE_ARS): string {
-  const ars = Math.round((amountUsd * exchangeRate) / 500) * 500;
-  return `$${ars.toLocaleString('es-AR')}`;
+export function formatARS(amountUsd: number, rateArs: number = DEFAULT_EXCHANGE_RATE_ARS): string {
+  const totalArs = Math.round(amountUsd * rateArs);
+  return `$${totalArs.toLocaleString('es-AR')} ARS`;
 }

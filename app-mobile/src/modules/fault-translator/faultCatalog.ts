@@ -32,7 +32,7 @@ const LOCAL_DTC_DICTIONARY: Record<string, Omit<TranslatedFaultCard, 'code' | 'd
     plainExplanation:
       'La computadora recibe una lectura crítica del circuito de agua. Puede haberse roto una manguera, trabado el termostato o fallado el bulbo que prende el electroventilador.',
     canKeepDriving: false,
-    drivingInstruction: '🛑 Frená en un lugar seguro ahora mismo y apagá el motor.',
+    drivingInstruction: 'Frená en un lugar seguro ahora mismo y apagá el motor.',
     partsInvolved: 'Bulbo de temperatura / Termostato + Purga de líquido refrigerante',
     fixTodayCostUsd: { min: 45, max: 75 },
     ignoreConsequence: 'Soplar la junta de tapa de cilindros y doblar la tapa por recalentamiento.',
@@ -45,7 +45,7 @@ const LOCAL_DTC_DICTIONARY: Record<string, Omit<TranslatedFaultCard, 'code' | 'd
     plainExplanation:
       'El motor está en marcha pero el sistema eléctrico cayó por debajo de 13.0V. Se cortó la correa auxiliar o se gastaron los carbones/regulador del alternador.',
     canKeepDriving: false,
-    drivingInstruction: '🛑 No apagues el auto en medio del tránsito; llevá el auto directo a un taller cercano antes de que se agote la batería (quedan ~25 min de autonomía).',
+    drivingInstruction: 'No apagues el auto en medio del tránsito; llevá el auto directo a un taller cercano antes de que se agote la batería (quedan ~25 min de autonomía).',
     partsInvolved: 'Regulador de voltaje / Carbones de alternador o Correa Poli-V',
     fixTodayCostUsd: { min: 70, max: 130 },
     ignoreConsequence: 'Quedarte tirado en la calle sin dirección asistida ni luces + arruinar la batería + costo de grúa.',
@@ -58,7 +58,7 @@ const LOCAL_DTC_DICTIONARY: Record<string, Omit<TranslatedFaultCard, 'code' | 'd
     plainExplanation:
       'Uno de los cilindros del motor no está quemando bien la nafta. Por eso sentís que el auto tironea al acelerar, tiembla en los semáforos y gasta un 15% más de combustible.',
     canKeepDriving: true,
-    drivingInstruction: '⚠️ Podés volver tranquilo a tu casa sin pisar el acelerador a fondo. Pedí turno esta semana.',
+    drivingInstruction: 'Podés volver tranquilo a tu casa sin pisar el acelerador a fondo. Pedí turno esta semana.',
     partsInvolved: 'Juego de bujías nuevas o bobina de encendido + 40 min de mano de obra',
     fixTodayCostUsd: { min: 55, max: 95 },
     ignoreConsequence: 'La nafta cruda sin quemar pasa al escape y derrite el Catalizador.',
@@ -71,7 +71,7 @@ const LOCAL_DTC_DICTIONARY: Record<string, Omit<TranslatedFaultCard, 'code' | 'd
     plainExplanation:
       'El sensor del caño de escape detecta que los gases salen menos filtrados. Muy común después de cargar nafta de mala calidad o tener bujías viejas.',
     canKeepDriving: true,
-    drivingInstruction: '✅ Podés usar el auto normalmente. No te va a dejar a pata, pero hacelo revisar antes de la VTV.',
+    drivingInstruction: 'Podés usar el auto normalmente. No te va a dejar a pata, pero hacelo revisar antes de la VTV.',
     partsInvolved: 'Limpieza/cambio de Sonda Lambda trasera o revisión de catalizador',
     fixTodayCostUsd: { min: 65, max: 140 },
     ignoreConsequence: 'Aumento de consumo de nafta, pérdida de potencia en ruta y rebote en la VTV.',
@@ -84,7 +84,7 @@ const LOCAL_DTC_DICTIONARY: Record<string, Omit<TranslatedFaultCard, 'code' | 'd
     plainExplanation:
       'Al motor le está entrando aire de más por alguna manguerita reseca o la bomba/inyectores mandan poca nafta.',
     canKeepDriving: true,
-    drivingInstruction: '⚠️ Podés circular con cuidado, pero el motor trabaja más caliente de lo normal.',
+    drivingInstruction: 'Podés circular con cuidado, pero el motor trabaja más caliente de lo normal.',
     partsInvolved: 'Manguera de vacío / Limpieza de inyectores por ultrasonido',
     fixTodayCostUsd: { min: 45, max: 85 },
     ignoreConsequence: 'Recalentamiento interno en válvulas y tironeos fuertes al pasar camiones en ruta.',

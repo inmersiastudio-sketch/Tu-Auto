@@ -1,109 +1,138 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  Platform,
   SafeAreaView,
-  StatusBar,
-  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
-  View,
+  StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { DemoControlBar } from './src/components/DemoControlBar';
-import { translateVehicleFaults } from './src/modules/fault-translator/faultCatalog';
-import { sharedOBD2Provider } from './src/modules/obd2-engine/MockOBD2Provider';
+import { Car, ShieldCheck, Wallet } from 'lucide-react-native';
+import { MockOBD2Provider } from './src/modules/obd2-engine/MockOBD2Provider';
 import { LiveTelemetryFrame, ScenarioId } from './src/modules/obd2-engine/types';
+import { evaluateElectricalSystem } from './src/modules/electrical-guard/electricalEngine';
+import { evaluateThermalSystem } from './src/modules/thermal-shield/thermalEngine';
+import { evaluateOilAndFluids } from './src/modules/oil-tracker/oilEngine';
+import { translateVehicleFaults } from './src/modules/fault-translator/faultCatalog';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
-import { COLORS } from './src/theme/colors';
+import { Colors } from './src/theme/colors';
 
-type ActiveTab = 'DASHBOARD' | 'SCANNER' | 'WALLET';
+type TabKey = 'RESUMEN' | 'SALUD' | 'GASTOS';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('DASHBOARD');
-  const [showDemoBar, setShowDemoBar] = useState<boolean>(false);
-  const [frame, setFrame] = useState<LiveTelemetryFrame>(() =>
-    sharedOBD2Provider.computeNextFrame()
-  );
+  const [activeTab, setActiveTab] = useState<TabKey>('RESUMEN');
+  const [activeScenario, setActiveScenario] = useState<ScenarioId>('NORMAL');
+
+  const providerRef = useRef(new MockOBD2Provider());
+
+  const [frame, setFrame] = useState<LiveTelemetryFrame>({
+    timestamp: Date.now(),
+    connectionStatus: 'CONNECTED_SIMULATOR',
+    activeScenario: 'NORMAL',
+    rpm: 840,
+    speedKmh: 42,
+    coolantTempC: 90,
+    coolantSlopeCPerMin: 0.2,
+    voltageInstantV: 14.15,
+    restingVoltageV: 12.6,
+    lastCrankingMinV: 10.35,
+    distanceSinceResetKm: 4820,
+    odometerKm: 42500,
+    idleTrafficHours: 48.5,
+    lastOilChangeKm: 35700,
+    activeDTCs: [],
+    pendingDTCs: [],
+  });
 
   useEffect(() => {
-    const unsubscribe = sharedOBD2Provider.subscribeTelemetry((newFrame) => {
-      setFrame(newFrame);
+    const provider = providerRef.current;
+    provider.connect();
+    const unsubscribe = provider.subscribeTelemetry((nextFrame: LiveTelemetryFrame) => {
+      setFrame(nextFrame);
     });
+
     return () => {
       unsubscribe();
+      provider.disconnect();
     };
   }, []);
 
   const handleSelectScenario = (scenario: ScenarioId) => {
-    sharedOBD2Provider.triggerSimulatedScenario(scenario);
+    setActiveScenario(scenario);
+    providerRef.current.triggerSimulatedScenario(scenario);
   };
 
-  const activeFaultCount = translateVehicleFaults(frame).length;
+  const electricalReport = evaluateElectricalSystem(frame);
+  const thermalReport = evaluateThermalSystem(frame);
+  const oilReport = evaluateOilAndFluids(frame, 10000);
+  const activeFaults = translateVehicleFaults(frame);
 
-  const headerTitle =
-    activeTab === 'DASHBOARD'
-      ? 'Resumen de tu auto'
-      : activeTab === 'SCANNER'
-      ? 'Salud y diagnóstico'
-      : 'Gastos previstos';
+  const hasAlertDot =
+    activeFaults.length > 0 ||
+    thermalReport.severity === 'ROJO' ||
+    electricalReport.alternatorSeverity === 'ROJO';
 
   return (
-    <View style={styles.outerBackground}>
-      <SafeAreaView style={styles.phoneFrame}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.appBackground} />
+    <SafeAreaView style={styles.outerShell}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.bgPrimary} />
 
-        {/* Cabecera Minimalista Exacta a la Referencia: "BUEN DÍA / Resumen de tu auto" + Avatar MP */}
-        <View style={styles.topHeader}>
-          <View>
-            <Text style={styles.greetingText}>BUEN DÍA</Text>
-            <Text style={styles.mainHeaderTitle}>{headerTitle}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.avatarCircle}
-            onPress={() => setShowDemoBar((prev) => !prev)}
-          >
-            <Text style={styles.avatarText}>MP</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cajón Ocultable de Simulación (se abre al tocar ⚙️ o el avatar MP) */}
-        <DemoControlBar
-          activeScenario={frame.activeScenario}
-          onSelectScenario={handleSelectScenario}
-          visible={showDemoBar}
-          onClose={() => setShowDemoBar(false)}
-        />
-
-        {/* Contenido Principal Limpio */}
-        <View style={styles.screenArea}>
-          {activeTab === 'DASHBOARD' && (
+      <View style={styles.mobileViewport}>
+        <View style={styles.mainBody}>
+          {activeTab === 'RESUMEN' && (
             <DashboardScreen
+              vehicleName="Volkswagen Gol Trend"
+              plate="AE 492 KL"
               frame={frame}
-              onNavigateToScanner={() => setActiveTab('SCANNER')}
-              onNavigateToWallet={() => setActiveTab('WALLET')}
-              onToggleDemoBar={() => setShowDemoBar((prev) => !prev)}
+              electricalReport={electricalReport}
+              thermalReport={thermalReport}
+              oilReport={oilReport}
+              activeFaults={activeFaults}
+              activeScenario={activeScenario}
+              onSelectScenario={handleSelectScenario}
+              onOpenScanner={() => setActiveTab('SALUD')}
+              onOpenWallet={() => setActiveTab('GASTOS')}
             />
           )}
-          {activeTab === 'SCANNER' && <ScannerScreen frame={frame} />}
-          {activeTab === 'WALLET' && <WalletScreen frame={frame} />}
+
+          {activeTab === 'SALUD' && (
+            <ScannerScreen
+              activeFaults={activeFaults}
+              activeScenario={activeScenario}
+              onSelectScenario={handleSelectScenario}
+            />
+          )}
+
+          {activeTab === 'GASTOS' && (
+            <WalletScreen
+              oilReport={oilReport}
+              activeFaults={activeFaults}
+            />
+          )}
         </View>
 
-        {/* Barra de Navegación Inferior Flotante Estilo Píldora (3 Pestañas Limpias) */}
-        <View style={styles.bottomNavWrapper}>
-          <View style={styles.bottomNavCard}>
+        {/* Floating Bottom Pill Navigation Bar (Stitch Exact: 3 Tabs + Lucide Vector Icons) */}
+        <View style={styles.bottomNavWrapper} pointerEvents="box-none">
+          <View style={styles.bottomNavPill}>
             <TouchableOpacity
               style={[
-                styles.navTab,
-                activeTab === 'DASHBOARD' && styles.navTabActivePill,
+                styles.tabButton,
+                activeTab === 'RESUMEN' && styles.tabButtonActive,
               ]}
-              onPress={() => setActiveTab('DASHBOARD')}
+              onPress={() => setActiveTab('RESUMEN')}
+              activeOpacity={0.85}
             >
-              <Text style={styles.navIcon}>🚗</Text>
+              <Car
+                size={20}
+                color={
+                  activeTab === 'RESUMEN' ? '#FFFFFF' : Colors.textSecondary
+                }
+              />
               <Text
                 style={[
-                  styles.navLabel,
-                  activeTab === 'DASHBOARD' && styles.navLabelActive,
+                  styles.tabLabel,
+                  activeTab === 'RESUMEN' && styles.tabLabelActive,
                 ]}
               >
                 Resumen
@@ -112,37 +141,51 @@ export default function App() {
 
             <TouchableOpacity
               style={[
-                styles.navTab,
-                activeTab === 'SCANNER' && styles.navTabActivePill,
+                styles.tabButton,
+                activeTab === 'SALUD' && styles.tabButtonActive,
               ]}
-              onPress={() => setActiveTab('SCANNER')}
+              onPress={() => setActiveTab('SALUD')}
+              activeOpacity={0.85}
             >
-              <View>
-                <Text style={styles.navIcon}>🕒</Text>
-                {activeFaultCount > 0 && <View style={styles.redDotBadge} />}
+              <View style={styles.iconWithBadge}>
+                <ShieldCheck
+                  size={20}
+                  color={
+                    activeTab === 'SALUD' ? '#FFFFFF' : Colors.textSecondary
+                  }
+                />
+                {hasAlertDot && activeTab !== 'SALUD' && (
+                  <View style={styles.tabAlertDot} />
+                )}
               </View>
               <Text
                 style={[
-                  styles.navLabel,
-                  activeTab === 'SCANNER' && styles.navLabelActive,
+                  styles.tabLabel,
+                  activeTab === 'SALUD' && styles.tabLabelActive,
                 ]}
               >
-                Historial
+                Salud
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
-                styles.navTab,
-                activeTab === 'WALLET' && styles.navTabActivePill,
+                styles.tabButton,
+                activeTab === 'GASTOS' && styles.tabButtonActive,
               ]}
-              onPress={() => setActiveTab('WALLET')}
+              onPress={() => setActiveTab('GASTOS')}
+              activeOpacity={0.85}
             >
-              <Text style={styles.navIcon}>👛</Text>
+              <Wallet
+                size={20}
+                color={
+                  activeTab === 'GASTOS' ? '#FFFFFF' : Colors.textSecondary
+                }
+              />
               <Text
                 style={[
-                  styles.navLabel,
-                  activeTab === 'WALLET' && styles.navLabelActive,
+                  styles.tabLabel,
+                  activeTab === 'GASTOS' && styles.tabLabelActive,
                 ]}
               >
                 Gastos
@@ -150,109 +193,89 @@ export default function App() {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  outerBackground: {
+  outerShell: {
     flex: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#EFECE6',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  phoneFrame: {
+  mobileViewport: {
     flex: 1,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 430 : '100%',
-    maxHeight: Platform.OS === 'web' ? 900 : '100%',
-    backgroundColor: COLORS.appBackground,
-    borderRadius: Platform.OS === 'web' ? 42 : 0,
-    overflow: 'hidden',
-    borderWidth: Platform.OS === 'web' ? 8 : 0,
-    borderColor: '#1E2238',
+    maxWidth: 440,
+    backgroundColor: Colors.bgPrimary,
+    position: 'relative',
+    shadowColor: '#181445',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 30,
   },
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingTop: 18,
-    paddingBottom: 14,
-  },
-  greetingText: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  mainHeaderTitle: {
-    color: COLORS.textDark,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.avatarDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: COLORS.textWhite,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  screenArea: {
+  mainBody: {
     flex: 1,
   },
   bottomNavWrapper: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    paddingTop: 6,
-    backgroundColor: COLORS.appBackground,
+    position: 'absolute',
+    bottom: 18,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
   },
-  bottomNavCard: {
+  bottomNavPill: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surfaceWhite,
-    borderRadius: 28,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderRadius: 999,
     padding: 6,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: Colors.borderSubtle,
+    shadowColor: '#181445',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 6,
   },
-  navTab: {
+  tabButton: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 22,
+    gap: 7,
+    paddingVertical: 11,
+    borderRadius: 999,
   },
-  navTabActivePill: {
-    backgroundColor: COLORS.brandIndigoSoft,
+  tabButtonActive: {
+    backgroundColor: Colors.brandPrimary,
+    shadowColor: Colors.brandPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
   },
-  navIcon: {
-    fontSize: 16,
-    marginBottom: 2,
+  tabLabel: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
   },
-  navLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
+  tabLabelActive: {
+    color: '#FFFFFF',
     fontWeight: '700',
   },
-  navLabelActive: {
-    color: COLORS.brandIndigo,
-    fontWeight: '800',
+  iconWithBadge: {
+    position: 'relative',
   },
-  redDotBadge: {
+  tabAlertDot: {
     position: 'absolute',
-    right: -4,
     top: -2,
+    right: -3,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.dangerRed,
+    backgroundColor: Colors.warnAmber,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
 });
