@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Tu-Auto Smart OBD2",
+    "slug": "tu-auto-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0F19",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.tuauto.copiloto"
+    },
+    "android": {
+      "package": "app.tuauto.copiloto"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Expo & React Native
+.expo/
+**/.expo/
+dist/
+**/dist/
+web-build/
+**/web-build/
+
+# Secretos y Variables de Entorno (SecOps)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# Logs y Sistema Operativo
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+Thumbs.db
+coverage/
+**/coverage/
