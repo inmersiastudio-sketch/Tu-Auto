@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { OfflineStorageEngine } from '../db-local/sqliteCache';
+import { CloudAndBillingService } from '../modules/cloud-sync/supabaseSyncService';
 import { evaluateElectricalSystem } from '../modules/electrical-guard/electricalEngine';
 import { computeOverallHealthScore, translateVehicleFaults } from '../modules/fault-translator/faultCatalog';
+import { evaluateFleetVehicleAbuse } from '../modules/fleet-b2b/fleetAlertEngine';
+import { BleOBD2Provider, BleTransportAdapter, ELM327_INIT_SEQUENCE } from '../modules/obd2-engine/BleOBD2Provider';
 import {
   decodeDTCResponseHex,
   parseAtRvVoltage,
@@ -14,38 +18,32 @@ import { MockOBD2Provider } from '../modules/obd2-engine/MockOBD2Provider';
 import { evaluateOilAndFluids } from '../modules/oil-tracker/oilEngine';
 import { evaluateThermalSystem } from '../modules/thermal-shield/thermalEngine';
 
-describe('Tu-Auto Core Engineering & Security Test Suite', () => {
+describe('Tu-Auto End-to-End Engineering & Security Test Suite (Sprints 1 to 4)', () => {
   describe('1. Decodificador Hexadecimal OBD2 (SAE J1979 / ELM327)', () => {
     it('decodifica temperatura de agua PID 0105 exactamente (A - 40)', () => {
-      // 0x82 = 130 -> 130 - 40 = 90°C
       expect(parseCoolantTempHex('41 05 82')).toBe(90);
-      // 0x92 = 146 -> 146 - 40 = 106°C (Recalentamiento)
       expect(parseCoolantTempHex('410592>')).toBe(106);
       expect(parseCoolantTempHex('NO DATA')).toBeNull();
     });
 
     it('decodifica RPM del motor PID 010C ((A*256 + B)/4)', () => {
-      // 0x0C 0x80 = 3200 / 4 = 800 RPM
       expect(parseRpmHex('41 0C 0C 80')).toBe(800);
-      // 0x1F 0x40 = 8000 / 4 = 2000 RPM
       expect(parseRpmHex('410C1F40')).toBe(2000);
     });
 
     it('decodifica velocidad PID 010D y voltaje ECU PID 0142 / AT RV', () => {
-      expect(parseSpeedHex('41 0D 5A')).toBe(90); // 0x5A = 90 km/h
-      expect(parseControlModuleVoltageHex('41 42 37 46')).toBe(14.15); // 14150 / 1000 = 14.15V
+      expect(parseSpeedHex('41 0D 5A')).toBe(90);
+      expect(parseControlModuleVoltageHex('41 42 37 46')).toBe(14.15);
       expect(parseAtRvVoltage('14.2V >')).toBe(14.2);
     });
 
     it('decodifica distancia desde borrado de fallas PID 0131 (Detector Fraude Auto Usado)', () => {
-      expect(parseDistanceSinceCodesClearedHex('41 31 00 09')).toBe(9); // 9 km!
-      expect(parseDistanceSinceCodesClearedHex('41 31 12 D4')).toBe(4820); // 4820 km
+      expect(parseDistanceSinceCodesClearedHex('41 31 00 09')).toBe(9);
+      expect(parseDistanceSinceCodesClearedHex('41 31 12 D4')).toBe(4820);
     });
 
     it('decodifica códigos de falla DTC Modo 03 (43) y Modo 07 (47) sin errores', () => {
-      // 43 02 03 02 04 20 -> 2 códigos: P0302 y P0420
       expect(decodeDTCResponseHex('43 02 03 02 04 20', '43')).toEqual(['P0302', 'P0420']);
-      // Modo 07 preventivo: P0171
       expect(decodeDTCResponseHex('47 01 71 00 00', '47')).toEqual(['P0171']);
     });
   });
@@ -96,7 +94,6 @@ describe('Tu-Auto Core Engineering & Security Test Suite', () => {
       provider.triggerSimulatedScenario('NORMAL');
       const frame = provider.computeNextFrame();
       const oil = evaluateOilAndFluids(frame, 10000);
-      // 84320 - 77500 = 6820 km reales + (48.5 hs * 45 = 2183 km tráfico) = 9003 km equivalentes
       expect(oil.realKmSinceChange).toBe(6820);
       expect(oil.trafficPenaltyKm).toBe(2183);
       expect(oil.equivalentWearKm).toBe(9003);
@@ -122,6 +119,89 @@ describe('Tu-Auto Core Engineering & Security Test Suite', () => {
       const health = computeOverallHealthScore(provider.computeNextFrame());
       expect(health.statusColor).toBe('ROJO');
       expect(health.score).toBeLessThan(50);
+    });
+  });
+
+  describe('6. Conexión Bluetooth BLE Real y Cola Asíncrona (Sprint 2)', () => {
+    it('ejecuta la secuencia completa AT Z..AT SP 0 y lee sensores en orden estricto', async () => {
+      const sentCommands: string[] = [];
+      const mockTransport: BleTransportAdapter = {
+        connectToDevice: async () => true,
+        disconnectDevice: async () => {},
+        writeAndAwaitResponse: async (cmd) => {
+          const cleanCmd = cmd.trim();
+          sentCommands.push(cleanCmd);
+          if (cleanCmd === 'AT RV') return '14.1V>';
+          if (cleanCmd === '010C') return '410C0D48>'; // 850 RPM
+          if (cleanCmd === '0105') return '410583>';   // 91°C
+          if (cleanCmd === '010D') return '410D3C>';   // 60 km/h
+          if (cleanCmd === '03') return '43010302>';   // P0302
+          if (cleanCmd === '07') return '47010420>';   // P0420
+          if (cleanCmd === '0131') return '4131000C>'; // 12 km
+          return 'OK>';
+        },
+      };
+
+      const bleProvider = new BleOBD2Provider(mockTransport);
+      const connected = await bleProvider.connect('ESP32-TUAUTO-01');
+      expect(connected).toBe(true);
+      expect(sentCommands.slice(0, ELM327_INIT_SEQUENCE.length)).toEqual([...ELM327_INIT_SEQUENCE]);
+
+      const frame = await bleProvider.pollSingleFrame();
+      expect(frame.voltageInstantV).toBe(14.1);
+      expect(frame.rpm).toBe(850);
+      expect(frame.coolantTempC).toBe(91);
+      expect(frame.speedKmh).toBe(60);
+
+      const scan = await bleProvider.runFullDiagnosticScan();
+      expect(scan.active).toEqual(['P0302']);
+      expect(scan.pending).toEqual(['P0420']);
+      expect(scan.kmSinceClear).toBe(12);
+    });
+  });
+
+  describe('7. Persistencia Offline-First, Cotización Cloud y Alertas de Flota B2B (Sprints 2-4)', () => {
+    it('encola eventos sin internet de forma idempotente (sin duplicados) y los sincroniza', async () => {
+      const storage = new OfflineStorageEngine();
+      storage.enqueueOfflineEvent('crank-001', 'electrical_cranking_logs', { minV: 9.1 });
+      storage.enqueueOfflineEvent('crank-001', 'electrical_cranking_logs', { minV: 9.1 }); // Duplicado ignorado
+      expect(storage.getPendingEvents().length).toBe(1);
+
+      const flushed = await storage.flushPendingToCloud(async (events) =>
+        events.map((e) => e.idempotencyKey)
+      );
+      expect(flushed).toBe(1);
+      expect(storage.getPendingEvents().length).toBe(0);
+    });
+
+    it('actualiza cotización USD->ARS dinámicamente y devuelve planes de MercadoPago', () => {
+      const billing = new CloudAndBillingService();
+      billing.setExchangeRateArs(1200);
+      expect(billing.getExchangeRateArs()).toBe(1200);
+      const plans = billing.getSubscriptionPlans();
+      expect(plans.length).toBe(2);
+      expect(plans[0].planId).toBe('pro_b2c');
+      expect(plans[1].planId).toBe('fleet_b2b');
+    });
+
+    it('detecta cuando un chofer de Uber desconecta el sensor OBD2 o recalienta el auto', () => {
+      const alerts = evaluateFleetVehicleAbuse({
+        plate: 'AE 492 KL',
+        driverName: 'Carlos Gómez',
+        isDongleConnected: false,
+        minutesSinceLastPing: 12,
+        coolantTempC: 105,
+        rpm: 4900,
+        voltageV: 12.1,
+        oilLifePercent: 5,
+      });
+      expect(alerts.map((a) => a.alertType)).toEqual([
+        'TAMPER_DISCONNECTED',
+        'OVERHEATING',
+        'HIGH_RPM_ABUSE',
+        'ALTERNATOR_FAILURE',
+        'OIL_OVERDUE',
+      ]);
     });
   });
 });
