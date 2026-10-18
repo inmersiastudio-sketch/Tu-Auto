@@ -21,7 +21,7 @@
     "react-native": "0.76.5",
     "react-native-svg": "15.8.0",
     "react-native-web": "~0.19.13",
-    "three": "^0.186.1"
+    "three": "0.160.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
