@@ -105,12 +105,13 @@ export const DashboardScreen: React.FC<Props> = ({
         />
       )}
 
-      {/* Hero Card con el Auto 3D/SVG */}
+      {/* Hero Card con el Auto 3D Real */}
       <Car3DShowcase
         vehicleName={`${chequeo.modelo.marca} ${chequeo.modelo.modelo}`}
         vehicleTrim={`${chequeo.modelo.motor} · ${chequeo.kmActuales.toLocaleString('es-AR')} km`}
         vehicleYear={2021}
         plate="AE 492 KL"
+        bodyType={chequeo.modelo.tipoCarroceria}
         selectedPaint={selectedPaint}
         overallStatus={overallHeroColor}
         statusHeadline={chequeo.tituloResumen}

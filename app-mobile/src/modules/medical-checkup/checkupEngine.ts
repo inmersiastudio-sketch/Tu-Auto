@@ -16,11 +16,14 @@ export type ComponenteId =
   | 'filtro_aire'
   | 'luces_testigos';
 
+export type TipoCarroceria = 'hatchback' | 'sedan' | 'pickup' | 'suv';
+
 export interface ModeloAutoPreset {
   id: string;
   marca: string;
   modelo: string;
   motor: string;
+  tipoCarroceria: TipoCarroceria;
   usaCadenaDistribucion: boolean;
   intervalos: {
     aceiteKm: number;
@@ -45,6 +48,7 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     marca: 'VW',
     modelo: 'Gol Trend',
     motor: '1.6 MSI',
+    tipoCarroceria: 'hatchback',
     usaCadenaDistribucion: false,
     intervalos: {
       aceiteKm: 10000,
@@ -66,6 +70,7 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     marca: 'Fiat',
     modelo: 'Cronos',
     motor: '1.3 Firefly',
+    tipoCarroceria: 'sedan',
     usaCadenaDistribucion: true,
     intervalos: {
       aceiteKm: 10000,
@@ -81,10 +86,75 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     },
   },
   {
+    id: 'toyota_hilux',
+    marca: 'Toyota',
+    modelo: 'Hilux',
+    motor: '2.8 TDI',
+    tipoCarroceria: 'pickup',
+    usaCadenaDistribucion: true,
+    intervalos: {
+      aceiteKm: 10000,
+      aceiteMeses: 12,
+      refrigeranteKm: 80000,
+      refrigeranteMeses: 48,
+      bateriaMeses: 48,
+      frenosKm: 45000,
+      neumaticosRotacionKm: 10000,
+      neumaticosCambioMeses: 60,
+      filtroAireKm: 20000,
+      filtroAireMeses: 12,
+    },
+  },
+  {
+    id: 'chevrolet_tracker',
+    marca: 'Chevrolet',
+    modelo: 'Tracker / SUV',
+    motor: '1.2 Turbo',
+    tipoCarroceria: 'suv',
+    usaCadenaDistribucion: false,
+    intervalos: {
+      aceiteKm: 10000,
+      aceiteMeses: 12,
+      correaKm: 60000,
+      correaMeses: 48,
+      refrigeranteKm: 60000,
+      refrigeranteMeses: 36,
+      bateriaMeses: 36,
+      frenosKm: 38000,
+      neumaticosRotacionKm: 10000,
+      neumaticosCambioMeses: 60,
+      filtroAireKm: 15000,
+      filtroAireMeses: 12,
+    },
+  },
+  {
+    id: 'peugeot_208',
+    marca: 'Peugeot',
+    modelo: '208',
+    motor: '1.6 VTi',
+    tipoCarroceria: 'hatchback',
+    usaCadenaDistribucion: false,
+    intervalos: {
+      aceiteKm: 10000,
+      aceiteMeses: 12,
+      correaKm: 70000,
+      correaMeses: 60,
+      refrigeranteKm: 40000,
+      refrigeranteMeses: 24,
+      bateriaMeses: 36,
+      frenosKm: 32000,
+      neumaticosRotacionKm: 10000,
+      neumaticosCambioMeses: 60,
+      filtroAireKm: 15000,
+      filtroAireMeses: 12,
+    },
+  },
+  {
     id: 'toyota_etios',
     marca: 'Toyota',
     modelo: 'Etios',
     motor: '1.5 16v',
+    tipoCarroceria: 'sedan',
     usaCadenaDistribucion: true,
     intervalos: {
       aceiteKm: 10000,
@@ -104,6 +174,7 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     marca: 'Chevrolet',
     modelo: 'Classic / Onix',
     motor: '1.4 8v',
+    tipoCarroceria: 'sedan',
     usaCadenaDistribucion: false,
     intervalos: {
       aceiteKm: 10000,
@@ -121,31 +192,11 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     },
   },
   {
-    id: 'peugeot_208',
-    marca: 'Peugeot',
-    modelo: '208',
-    motor: '1.6 VTi',
-    usaCadenaDistribucion: false,
-    intervalos: {
-      aceiteKm: 10000,
-      aceiteMeses: 12,
-      correaKm: 70000,
-      correaMeses: 60,
-      refrigeranteKm: 40000,
-      refrigeranteMeses: 24,
-      bateriaMeses: 36,
-      frenosKm: 32000,
-      neumaticosRotacionKm: 10000,
-      neumaticosCambioMeses: 60,
-      filtroAireKm: 15000,
-      filtroAireMeses: 12,
-    },
-  },
-  {
     id: 'renault_sandero',
     marca: 'Renault',
-    modelo: 'Sandero',
+    modelo: 'Sandero / Stepway',
     motor: '1.6 16v',
+    tipoCarroceria: 'suv',
     usaCadenaDistribucion: false,
     intervalos: {
       aceiteKm: 10000,
@@ -167,6 +218,7 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
     marca: 'Ford',
     modelo: 'Ka / Fiesta',
     motor: '1.6 Sigma',
+    tipoCarroceria: 'hatchback',
     usaCadenaDistribucion: false,
     intervalos: {
       aceiteKm: 15000,
@@ -177,47 +229,6 @@ export const CATALOGO_MODELOS_ARG: ModeloAutoPreset[] = [
       refrigeranteMeses: 36,
       bateriaMeses: 36,
       frenosKm: 38000,
-      neumaticosRotacionKm: 10000,
-      neumaticosCambioMeses: 60,
-      filtroAireKm: 15000,
-      filtroAireMeses: 12,
-    },
-  },
-  {
-    id: 'toyota_hilux',
-    marca: 'Toyota',
-    modelo: 'Hilux',
-    motor: '2.8 TDI',
-    usaCadenaDistribucion: true,
-    intervalos: {
-      aceiteKm: 10000,
-      aceiteMeses: 12,
-      refrigeranteKm: 80000,
-      refrigeranteMeses: 48,
-      bateriaMeses: 48,
-      frenosKm: 45000,
-      neumaticosRotacionKm: 10000,
-      neumaticosCambioMeses: 60,
-      filtroAireKm: 20000,
-      filtroAireMeses: 12,
-    },
-  },
-  {
-    id: 'generico_otro',
-    marca: 'Otro',
-    modelo: 'Estándar',
-    motor: 'General',
-    usaCadenaDistribucion: false,
-    esGenerico: true,
-    intervalos: {
-      aceiteKm: 10000,
-      aceiteMeses: 12,
-      correaKm: 60000,
-      correaMeses: 48,
-      refrigeranteKm: 40000,
-      refrigeranteMeses: 24,
-      bateriaMeses: 36,
-      frenosKm: 35000,
       neumaticosRotacionKm: 10000,
       neumaticosCambioMeses: 60,
       filtroAireKm: 15000,

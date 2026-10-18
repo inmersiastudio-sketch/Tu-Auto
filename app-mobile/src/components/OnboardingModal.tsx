@@ -174,7 +174,7 @@ export const OnboardingModal: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Auto en vivo + Colores */}
+        {/* Auto 3D en vivo sobre fondo blanco + Colores */}
         <View style={styles.livePreviewStage}>
           <Text style={styles.stageModelText}>
             {modeloSeleccionado.marca} {modeloSeleccionado.modelo} ·{' '}
@@ -182,7 +182,11 @@ export const OnboardingModal: React.FC<Props> = ({
           </Text>
 
           <View style={styles.carSvgWrap}>
-            <CarVectorIllustration paint={selectedPaint} height={96} />
+            <CarVectorIllustration
+              paint={selectedPaint}
+              bodyType={modeloSeleccionado.tipoCarroceria}
+              height={135}
+            />
           </View>
 
           <View style={styles.swatchesRow}>
@@ -484,16 +488,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   livePreviewStage: {
-    backgroundColor: Colors.heroIndigoMid,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 12,
     marginBottom: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   stageModelText: {
     fontFamily: FontFamily,
-    color: '#FFFFFF',
-    fontSize: 12.5,
+    color: Colors.textPrimary,
+    fontSize: 13,
     fontWeight: '600',
   },
   carSvgWrap: {
@@ -505,9 +511,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 4,
-    backgroundColor: 'rgba(15, 10, 60, 0.3)',
+    backgroundColor: Colors.bgPrimary,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 999,
   },
   colorCircleBtn: {
@@ -517,10 +523,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(15, 23, 42, 0.14)',
   },
   colorCircleBtnActive: {
-    borderColor: '#FFFFFF',
+    borderColor: Colors.brandPrimary,
     transform: [{ scale: 1.15 }],
   },
   segmentedTrack: {
