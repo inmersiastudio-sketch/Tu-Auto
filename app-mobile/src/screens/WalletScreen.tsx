@@ -1,42 +1,40 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React from 'react';
 import {
-  PiggyBank,
-  PlusCircle,
-  Droplets,
-  Thermometer,
-  Sliders,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import {
   ShieldCheck,
+  MessageSquareQuote,
   CheckCircle2,
+  Clock,
   AlertTriangle,
-  ThumbsUp,
+  Info,
+  Wrench,
 } from 'lucide-react-native';
-import { OilAndFluidReport } from '../modules/oil-tracker/oilEngine';
-import { TranslatedFaultCard } from '../modules/fault-translator/faultCatalog';
-import { Colors, DEFAULT_EXCHANGE_RATE_ARS } from '../theme/colors';
+import { ResumenChequeoMedico } from '../modules/medical-checkup/checkupEngine';
+import { Colors } from '../theme/colors';
 
 interface Props {
-  oilReport: OilAndFluidReport;
-  activeFaults: TranslatedFaultCard[];
+  chequeo: ResumenChequeoMedico;
 }
 
-function formatPesos(val: number): string {
-  return '$' + val.toLocaleString('es-AR');
-}
+export const WalletScreen: React.FC<Props> = ({ chequeo }) => {
+  const componentesVisibles = chequeo.componentes.filter(
+    (c) => c.aplicaAlModelo
+  );
 
-export const WalletScreen: React.FC<Props> = ({
-  oilReport,
-  activeFaults,
-}) => {
-  const [accumulatedSavings, setAccumulatedSavings] = useState(70000);
-  const [showBreakdown, setShowBreakdown] = useState(false);
+  const paraHacerPronto = componentesVisibles.filter(
+    (c) => c.estado === 'revisar' || c.estado === 'pronto'
+  );
 
-  const targetSemester = 140000;
-  const progressPct = Math.min(100, Math.round((accumulatedSavings / targetSemester) * 100));
-
-  const remainingKm = Math.max(
-    0,
-    oilReport.intervalTargetKm - oilReport.equivalentWearKm
+  const todaviaTienenVida = componentesVisibles.filter(
+    (c) =>
+      c.estado === 'bien' &&
+      c.id !== 'luces_testigos' &&
+      c.vidaConsumidaPct !== null
   );
 
   return (
@@ -45,228 +43,170 @@ export const WalletScreen: React.FC<Props> = ({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Top App Bar (Stitch Exact: TU AUTO • INTELIGENCIA FINANCIERA / Mi Bolsillo + Al día) */}
+      {/* Top App Bar */}
       <View style={styles.topHeader}>
         <View>
-          <Text style={styles.supHeader}>TU AUTO • INTELIGENCIA FINANCIERA</Text>
-          <Text style={styles.pageTitle}>Mi Bolsillo</Text>
+          <Text style={styles.supHeader}>ARGUMENTOS Y PREVISIÓN</Text>
+          <Text style={styles.pageTitle}>Guía para el Taller</Text>
         </View>
         <View style={styles.statusPill}>
-          <View style={styles.greenDot} />
-          <Text style={styles.statusPillText}>Al día</Text>
+          <ShieldCheck size={14} color={Colors.brandPrimaryDark} />
+          <Text style={styles.statusPillText}>Cero sorpresas</Text>
         </View>
       </View>
 
-      {/* Hero Smart Savings Card (Stitch Exact Indigo Gradient Card) */}
+      {/* Hero Card: Cómo ir al taller con información clara */}
       <View style={styles.heroCard}>
-        <View style={styles.heroTagRow}>
-          <PiggyBank size={16} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.heroTagText}>Ahorro Sugerido • Plan semestral</Text>
-        </View>
-
-        <Text style={styles.heroSubtitle}>
-          Para no tener sorpresas este semestre, separá:
+        <Text style={styles.heroTag}>TU RESUMEN PARA EL MECÁNICO</Text>
+        <Text style={styles.heroTitle}>
+          Sabé qué pedir y qué todavía no hace falta cambiar
         </Text>
+        <Text style={styles.heroDesc}>
+          Cada taller maneja su propia mano de obra, pero saber exactamente qué
+          le toca a tu {chequeo.modelo.modelo} por kilometraje evita que te
+          sumen repuestos que todavía están sanos.
+        </Text>
+      </View>
 
-        <View style={styles.heroAmountRow}>
-          <Text style={styles.heroAmount}>$35.000</Text>
-          <Text style={styles.heroAmountPerMonth}>/ mes</Text>
-        </View>
-
-        {/* Progress Bar */}
-        <View style={styles.progressSection}>
-          <View style={styles.progressLabelsRow}>
-            <Text style={styles.progressLabelLeft}>
-              Progreso para tus próximos 2 services
-            </Text>
-            <Text style={styles.progressLabelRight}>
-              {formatPesos(accumulatedSavings)} acumulados
-            </Text>
-          </View>
-
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
-          </View>
-
-          <View style={styles.progressFooterRow}>
-            <Text style={styles.progressMicroText}>
-              {progressPct}% del objetivo
-            </Text>
-            <Text style={styles.progressMicroText}>
-              {formatPesos(targetSemester)} total est.
+      {/* SECCIÓN 1: Qué pedir en tu próxima visita (Estado Pronto / Revisar) */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>
+            1. LO QUE SÍ CONVIENE PROGRAMAR
+          </Text>
+          <View style={styles.badgeCount}>
+            <Text style={styles.badgeCountText}>
+              {paraHacerPronto.length}{' '}
+              {paraHacerPronto.length === 1 ? 'ítem' : 'ítems'}
             </Text>
           </View>
         </View>
 
-        {/* Action Buttons inside Hero */}
-        <View style={styles.heroBtnRow}>
-          <TouchableOpacity
-            style={styles.heroPrimaryBtn}
-            onPress={() =>
-              setAccumulatedSavings((prev) => Math.min(targetSemester, prev + 17500))
-            }
-            activeOpacity={0.85}
-          >
-            <PlusCircle size={16} color={Colors.brandPrimaryDark} />
-            <Text style={styles.heroPrimaryBtnText}>Simular aporte</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.heroSecondaryBtn}
-            onPress={() => setShowBreakdown(!showBreakdown)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.heroSecondaryBtnText}>
-              {showBreakdown ? 'Ocultar' : 'Ver detalle'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {showBreakdown && (
-          <View style={styles.breakdownDrawer}>
-            <Text style={styles.breakdownDrawerText}>
-              Calculado según tu promedio de 1.100 km/mes en ciudad y precios de
-              repuestos originales Volkswagen en CABA/GBA.
+        {paraHacerPronto.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <CheckCircle2 size={20} color={Colors.safeGreenDark} />
+            <Text style={styles.emptyBoxText}>
+              No tenés mantenimientos vencidos ni próximos a vencer en este
+              momento.
             </Text>
           </View>
+        ) : (
+          paraHacerPronto.map((item) => (
+            <View key={item.id} style={styles.actionCard}>
+              <View style={styles.actionTopRow}>
+                <View style={styles.actionTitleRow}>
+                  {item.estado === 'revisar' ? (
+                    <AlertTriangle size={16} color={Colors.dangerRedDark} />
+                  ) : (
+                    <Clock size={16} color={Colors.warnAmberDark} />
+                  )}
+                  <Text style={styles.actionName}>{item.nombre}</Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.magnitudeBadge,
+                    item.magnitudCosto === 'Importante'
+                      ? styles.magHigh
+                      : item.magnitudCosto === 'Moderado'
+                      ? styles.magMed
+                      : styles.magLow,
+                  ]}
+                >
+                  <Text style={styles.magnitudeText}>
+                     Magnitud: {item.magnitudCosto}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.actionWhen}>{item.cuandoToca}</Text>
+
+              {item.queDecirleAlTaller && (
+                <View style={styles.quoteBlock}>
+                  <MessageSquareQuote
+                    size={14}
+                    color={Colors.brandPrimaryDark}
+                  />
+                  <Text style={styles.quoteText}>
+                    "{item.queDecirleAlTaller}"
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))
         )}
       </View>
 
-      {/* Section: Calendario Inteligente (3 Próximos Mantenimientos con Iconos Vectoriales) */}
+      {/* SECCIÓN 2: Lo que todavía tiene vida útil ("Que no te cambien de más") */}
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionLabel}>CALENDARIO INTELIGENTE</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>3 próximos</Text>
-          </View>
+          <Text style={styles.sectionLabel}>
+            2. LO QUE TODAVÍA TIENE VIDA ÚTIL
+          </Text>
         </View>
 
-        {/* Item 1: Cambio de aceite y filtros */}
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarLeft}>
-            <View style={[styles.calIconBox, { backgroundColor: Colors.warnAmberBg }]}>
-              <Droplets size={22} color={Colors.warnAmberDark} />
+        <View style={styles.shieldExplanationCard}>
+          <Wrench size={18} color={Colors.safeGreenDark} />
+          <Text style={styles.shieldExplanationText}>
+            Si en el service te sugieren cambiar alguno de estos componentes,
+            pedí que te muestren el desgaste físico porque según tu kilometraje
+            todavía tienen margen:
+          </Text>
+        </View>
+
+        {todaviaTienenVida.map((item) => (
+          <View key={item.id} style={styles.stillGoodRow}>
+            <View style={styles.stillGoodLeft}>
+              <CheckCircle2 size={16} color={Colors.safeGreenDark} />
+              <View style={styles.stillGoodTextCol}>
+                <Text style={styles.stillGoodName}>{item.nombre}</Text>
+                <Text style={styles.stillGoodSub}>{item.cuandoToca}</Text>
+              </View>
             </View>
-            <View style={styles.calTextCol}>
-              <Text style={styles.calTitle}>Cambio de aceite y filtros</Text>
-              <Text style={styles.calSubtitle}>
-                En ~{remainingKm.toLocaleString('es-AR')} km o {oilReport.estimatedDaysRemaining} días
+            <View style={styles.stillGoodPctPill}>
+              <Text style={styles.stillGoodPctText}>
+                {100 - (item.vidaConsumidaPct ?? 0)}% libre
               </Text>
-              <View style={[styles.priorityPill, { backgroundColor: Colors.warnAmberBg }]}>
-                <View style={[styles.priorityDot, { backgroundColor: Colors.warnAmber }]} />
-                <Text style={[styles.priorityText, { color: Colors.warnAmberDark }]}>
-                  Prioridad Media
-                </Text>
-              </View>
             </View>
           </View>
-          <View style={styles.calendarRight}>
-            <Text style={styles.calPrice}>$65.000</Text>
-            <Text style={styles.calPriceSub}>Estimado hoy</Text>
-          </View>
-        </View>
-
-        {/* Item 2: Líquido refrigerante y purga */}
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarLeft}>
-            <View style={[styles.calIconBox, { backgroundColor: Colors.infoSkyBg }]}>
-              <Thermometer size={22} color={Colors.infoSky} />
-            </View>
-            <View style={styles.calTextCol}>
-              <Text style={styles.calTitle}>Líquido refrigerante y purga</Text>
-              <Text style={styles.calSubtitle}>En ~4.500 km o 3 meses</Text>
-              <View style={[styles.priorityPill, { backgroundColor: Colors.safeGreenBg }]}>
-                <View style={[styles.priorityDot, { backgroundColor: Colors.safeGreen }]} />
-                <Text style={[styles.priorityText, { color: Colors.safeGreenDark }]}>
-                  Preventivo
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View style={styles.calendarRight}>
-            <Text style={styles.calPrice}>$38.000</Text>
-            <Text style={styles.calPriceSub}>Estimado hoy</Text>
-          </View>
-        </View>
-
-        {/* Item 3: Rotación y alineación */}
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarLeft}>
-            <View style={[styles.calIconBox, { backgroundColor: Colors.bgElevated }]}>
-              <Sliders size={22} color={Colors.brandPrimary} />
-            </View>
-            <View style={styles.calTextCol}>
-              <Text style={styles.calTitle}>Rotación y alineación</Text>
-              <Text style={styles.calSubtitle}>En ~6.000 km o 4 meses</Text>
-              <View style={[styles.priorityPill, { backgroundColor: Colors.bgElevated }]}>
-                <Text style={[styles.priorityText, { color: Colors.textSecondary }]}>
-                  Planificado
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View style={styles.calendarRight}>
-            <Text style={styles.calPrice}>$35.000</Text>
-            <Text style={styles.calPriceSub}>Estimado hoy</Text>
-          </View>
-        </View>
+        ))}
       </View>
 
-      {/* Section: Efecto Prevención (Cuidar hoy vs. Reparar mañana) */}
-      <View style={styles.preventionCard}>
-        <View style={styles.preventionHeaderRow}>
-          <View>
-            <Text style={styles.preventionTitle}>Efecto prevención</Text>
-            <Text style={styles.preventionSubtitle}>
-              Cuidar hoy vs. Reparar mañana
-            </Text>
-          </View>
-          <View style={styles.preventionShieldIcon}>
-            <ShieldCheck size={20} color={Colors.brandPrimaryDark} />
-          </View>
-        </View>
+      {/* SECCIÓN 3: Por qué conviene prevenir a tiempo (Magnitud relativa, sin precios frágiles) */}
+      <View style={styles.magnitudeComparisonCard}>
+        <Text style={styles.magTitle}>
+          Por qué el mantenimiento a tiempo cuida tu bolsillo
+        </Text>
+        <Text style={styles.magSubtitle}>
+          Sin importar el taller que elijas, la proporción en mecánica siempre
+          se mantiene:
+        </Text>
 
-        <View style={styles.comparisonGrid}>
-          {/* Left Column: Preventive Maintenance */}
-          <View style={styles.compBoxGreen}>
-            <View style={styles.compBadgeRow}>
-              <CheckCircle2 size={15} color={Colors.safeGreenDark} />
-              <Text style={styles.compLabelGreen}>MANTENIMIENTO HOY</Text>
-            </View>
-            <Text style={styles.compAmountGreen}>$138.000</Text>
-            <Text style={styles.compDescGreen}>
-              Total de tus 3 mantenimientos programados en los próximos 6 meses.
+        <View style={styles.magGrid}>
+          <View style={styles.magColGreen}>
+            <Text style={styles.magColHeaderGreen}>HACERLO A TIEMPO</Text>
+            <Text style={styles.magColBigGreen}>1x</Text>
+            <Text style={styles.magColDescGreen}>
+              Cambiar aceite, líquido refrigerante o el kit de correa cuando
+              corresponde es un gasto programado y acotado.
             </Text>
           </View>
 
-          {/* Right Column: Neglected Breakdown */}
-          <View style={styles.compBoxRed}>
-            <View style={styles.compBadgeRow}>
-              <AlertTriangle size={15} color={Colors.dangerRedDark} />
-              <Text style={styles.compLabelRed}>ROTURA MAYOR</Text>
-            </View>
-            <Text style={styles.compAmountRed}>
-              {activeFaults.length > 0
-                ? formatPesos(
-                    Math.round(activeFaults[0].ignoreDamageCostUsd * DEFAULT_EXCHANGE_RATE_ARS)
-                  )
-                : '$890.000+'}
-            </Text>
-            <Text style={styles.compDescRed}>
-              Costo promedio de junta soplada o catalizador dañado por falta de
-              service.
+          <View style={styles.magColRed}>
+            <Text style={styles.magColHeaderRed}>SI SE CORTA O RECALIENTA</Text>
+            <Text style={styles.magColBigRed}>8x a 12x</Text>
+            <Text style={styles.magColDescRed}>
+              Una correa cortada o una recalentada sin agua obliga a desarmar la
+              tapa de cilindros y multiplica el gasto por diez.
             </Text>
           </View>
         </View>
 
-        {/* Bottom Savings Callout */}
-        <View style={styles.footerSavingsNote}>
-          <ThumbsUp size={18} color={Colors.brandPrimaryDark} />
-          <Text style={styles.footerSavingsText}>
-            Ahorrás más de{' '}
-            <Text style={styles.footerSavingsBold}>$750.000</Text> en
-            imprevistos manteniendo tu auto al día y conservás su valor de
-            reventa.
+        <View style={styles.infoNoteRow}>
+          <Info size={15} color={Colors.textSecondary} />
+          <Text style={styles.infoNoteText}>
+            Consejo práctico: pedí siempre que te separen el precio del repuesto
+            por un lado y la mano de obra por otro.
           </Text>
         </View>
       </View>
@@ -288,17 +228,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   supHeader: {
     color: Colors.textSecondary,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.9,
   },
   pageTitle: {
     color: Colors.textPrimary,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.4,
   },
@@ -311,153 +251,35 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.safeGreen,
-  },
   statusPillText: {
-    color: Colors.textPrimary,
+    color: Colors.brandPrimaryDark,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   heroCard: {
     backgroundColor: Colors.heroIndigoMid,
     borderRadius: 24,
-    padding: 22,
-    marginBottom: 22,
-    shadowColor: '#2A14B4',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 6,
+    padding: 20,
+    marginBottom: 20,
   },
-  heroTagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 10,
-  },
-  heroTagText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  heroSubtitle: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  heroAmountRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    marginBottom: 18,
-  },
-  heroAmount: {
-    color: '#FFFFFF',
-    fontSize: 36,
+  heroTag: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: -1,
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
-  heroAmountPerMonth: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  progressSection: {
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    marginBottom: 16,
-  },
-  progressLabelsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  heroTitle: {
+    color: '#FFFFFF',
+    fontSize: 19,
+    fontWeight: '800',
+    lineHeight: 24,
     marginBottom: 8,
   },
-  progressLabelLeft: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  progressLabelRight: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  progressTrack: {
-    width: '100%',
-    height: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#34D399',
-    borderRadius: 999,
-  },
-  progressFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  progressMicroText: {
-    color: 'rgba(255,255,255,0.68)',
-    fontSize: 11,
-  },
-  heroBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  heroPrimaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  heroPrimaryBtnText: {
-    color: Colors.brandPrimaryDark,
+  heroDesc: {
+    color: 'rgba(255,255,255,0.88)',
     fontSize: 13,
-    fontWeight: '700',
-  },
-  heroSecondaryBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroSecondaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  breakdownDrawer: {
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.15)',
-  },
-  breakdownDrawerText: {
-    color: 'rgba(224,224,255,0.88)',
-    fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 19,
   },
   sectionBlock: {
     marginBottom: 20,
@@ -466,206 +288,251 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionLabel: {
     color: Colors.textSecondary,
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.9,
+    letterSpacing: 0.8,
   },
-  countBadge: {
+  badgeCount: {
     backgroundColor: Colors.bgElevated,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  countBadgeText: {
+  badgeCountText: {
     color: Colors.brandPrimaryDark,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  calendarCard: {
+  emptyBox: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+  },
+  emptyBoxText: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionCard: {
     backgroundColor: Colors.bgCard,
     borderRadius: 18,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
-    shadowColor: '#181445',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 14,
-    elevation: 2,
   },
-  calendarLeft: {
+  actionTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  actionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 13,
+    gap: 8,
     flex: 1,
   },
-  calIconBox: {
-    width: 46,
-    height: 46,
+  actionName: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  magnitudeBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  magLow: {
+    backgroundColor: Colors.safeGreenBg,
+  },
+  magMed: {
+    backgroundColor: Colors.warnAmberBg,
+  },
+  magHigh: {
+    backgroundColor: Colors.dangerRedBg,
+  },
+  magnitudeText: {
+    color: Colors.textPrimary,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  actionWhen: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  quoteBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#F3F0FF',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#D9D4FF',
+  },
+  quoteText: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 12,
+    fontStyle: 'italic',
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  shieldExplanationCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: Colors.safeGreenBg,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 13,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.safeGreenBorder,
   },
-  calTextCol: {
+  shieldExplanationText: {
+    flex: 1,
+    color: Colors.safeGreenDark,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  stillGoodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+  },
+  stillGoodLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
   },
-  calTitle: {
+  stillGoodTextCol: {
+    flex: 1,
+  },
+  stillGoodName: {
     color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
-  calSubtitle: {
+  stillGoodSub: {
     color: Colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
   },
-  priorityPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 6,
+  stillGoodPctPill: {
+    backgroundColor: Colors.safeGreenBg,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
-  priorityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  priorityText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  calendarRight: {
-    alignItems: 'flex-end',
-    marginLeft: 8,
-  },
-  calPrice: {
-    color: Colors.textPrimary,
-    fontSize: 17,
+  stillGoodPctText: {
+    color: Colors.safeGreenDark,
+    fontSize: 11,
     fontWeight: '800',
   },
-  calPriceSub: {
-    color: Colors.textSecondary,
-    fontSize: 10,
-    marginTop: 2,
-  },
-  preventionCard: {
+  magnitudeComparisonCard: {
     backgroundColor: Colors.bgCard,
     borderRadius: 22,
-    padding: 20,
+    padding: 18,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
   },
-  preventionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  preventionTitle: {
+  magTitle: {
     color: Colors.textPrimary,
     fontSize: 16,
     fontWeight: '800',
   },
-  preventionSubtitle: {
+  magSubtitle: {
     color: Colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 4,
+    marginBottom: 14,
   },
-  preventionShieldIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  comparisonGrid: {
+  magGrid: {
     flexDirection: 'row',
     gap: 10,
   },
-  compBoxGreen: {
+  magColGreen: {
     flex: 1,
     backgroundColor: Colors.safeGreenBg,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.safeGreenBorder,
-    borderRadius: 16,
-    padding: 14,
   },
-  compBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 6,
-  },
-  compLabelGreen: {
+  magColHeaderGreen: {
     color: Colors.safeGreenDark,
     fontSize: 10,
     fontWeight: '800',
   },
-  compAmountGreen: {
+  magColBigGreen: {
     color: '#065F46',
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: '800',
-    marginBottom: 4,
+    marginVertical: 4,
   },
-  compDescGreen: {
+  magColDescGreen: {
     color: Colors.safeGreenDark,
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
   },
-  compBoxRed: {
+  magColRed: {
     flex: 1,
     backgroundColor: Colors.dangerRedBg,
-    borderWidth: 1,
-    borderColor: Colors.dangerRedBorder,
     borderRadius: 16,
     padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.dangerRedBorder,
   },
-  compLabelRed: {
+  magColHeaderRed: {
     color: Colors.dangerRedDark,
     fontSize: 10,
     fontWeight: '800',
   },
-  compAmountRed: {
+  magColBigRed: {
     color: '#991B1B',
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: '800',
-    marginBottom: 4,
+    marginVertical: 4,
   },
-  compDescRed: {
+  magColDescRed: {
     color: Colors.dangerRedDark,
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
   },
-  footerSavingsNote: {
+  infoNoteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     backgroundColor: Colors.bgElevated,
-    borderRadius: 14,
-    padding: 13,
+    borderRadius: 12,
+    padding: 12,
     marginTop: 12,
   },
-  footerSavingsText: {
+  infoNoteText: {
     flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  footerSavingsBold: {
-    color: Colors.brandPrimaryDark,
-    fontWeight: '800',
+    color: Colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 16,
   },
 });

@@ -17,6 +17,7 @@ import {
 import { MockOBD2Provider } from '../modules/obd2-engine/MockOBD2Provider';
 import { evaluateOilAndFluids } from '../modules/oil-tracker/oilEngine';
 import { evaluateThermalSystem } from '../modules/thermal-shield/thermalEngine';
+import { ejecutarChequeoMedico } from '../modules/medical-checkup/checkupEngine';
 
 describe('Tu-Auto End-to-End Engineering & Security Test Suite (Sprints 1 to 4)', () => {
   describe('1. Decodificador Hexadecimal OBD2 (SAE J1979 / ELM327)', () => {
@@ -202,6 +203,50 @@ describe('Tu-Auto End-to-End Engineering & Security Test Suite (Sprints 1 to 4)'
         'ALTERNATOR_FAILURE',
         'OIL_OVERDUE',
       ]);
+    });
+  });
+
+  describe('8. Motor de Chequeo Médico de 8 Componentes (Con y Sin Dongle)', () => {
+    it('evalúa los 8 componentes tomando el criterio más restrictivo entre km y meses', () => {
+      const resultado = ejecutarChequeoMedico({
+        modeloId: 'vw_gol_trend',
+        anio: 2021,
+        kmActuales: 56000,
+        dongleConectado: false,
+        luzTestigoDeclaradaPorUsuario: false,
+        historial: {
+          correa_distribucion: { ultimoCambioKm: 0, mesesDesdeUltimoCambio: 40 },
+          aceite_filtro: { ultimoCambioKm: 45000, mesesDesdeUltimoCambio: 13 },
+          filtro_aire: { ultimoCambioKm: 52000, mesesDesdeUltimoCambio: 4 },
+        },
+      });
+
+      expect(resultado.componentes.length).toBe(8);
+      const correa = resultado.componentes.find((c) => c.id === 'correa_distribucion')!;
+      expect(correa.aplicaAlModelo).toBe(true);
+      expect(correa.estado).toBe('pronto'); // 56.000 / 60.000 = 93%
+      expect(correa.fuente).toBe('estimado');
+
+      const aceite = resultado.componentes.find((c) => c.id === 'aceite_filtro')!;
+      expect(aceite.estado).toBe('revisar'); // >100% por km (11.000/10.000) y meses (13/12)
+
+      const frenos = resultado.componentes.find((c) => c.id === 'frenos')!;
+      expect(frenos.estado).toBe('sin_datos'); // No cargado -> nunca muestra un 'bien' falso
+      expect(frenos.vidaConsumidaPct).toBeNull();
+    });
+
+    it('oculta la correa de distribución cuando el modelo usa cadena metálica (ej. Toyota Etios / Fiat Cronos)', () => {
+      const resultadoEtios = ejecutarChequeoMedico({
+        modeloId: 'toyota_etios',
+        anio: 2022,
+        kmActuales: 65000,
+        dongleConectado: false,
+        luzTestigoDeclaradaPorUsuario: false,
+        historial: {},
+      });
+
+      const correa = resultadoEtios.componentes.find((c) => c.id === 'correa_distribucion')!;
+      expect(correa.aplicaAlModelo).toBe(false);
     });
   });
 });

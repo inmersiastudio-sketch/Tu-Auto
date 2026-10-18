@@ -7,25 +7,65 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
-import { Car, ShieldCheck, Wallet } from 'lucide-react-native';
+import { Car, ClipboardCheck, MessageSquareQuote } from 'lucide-react-native';
 import { MockOBD2Provider } from './src/modules/obd2-engine/MockOBD2Provider';
 import { LiveTelemetryFrame, ScenarioId } from './src/modules/obd2-engine/types';
-import { evaluateElectricalSystem } from './src/modules/electrical-guard/electricalEngine';
-import { evaluateThermalSystem } from './src/modules/thermal-shield/thermalEngine';
-import { evaluateOilAndFluids } from './src/modules/oil-tracker/oilEngine';
-import { translateVehicleFaults } from './src/modules/fault-translator/faultCatalog';
+import {
+  CATALOGO_MODELOS_ARG,
+  ComponenteId,
+  ejecutarChequeoMedico,
+  PerfilVehiculoUsuario,
+} from './src/modules/medical-checkup/checkupEngine';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
+import { OnboardingModal } from './src/components/OnboardingModal';
 import { Colors } from './src/theme/colors';
 
-type TabKey = 'RESUMEN' | 'SALUD' | 'GASTOS';
+type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('RESUMEN');
   const [activeScenario, setActiveScenario] = useState<ScenarioId>('NORMAL');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const providerRef = useRef(new MockOBD2Provider());
+
+  // Estado del perfil del vehículo del usuario (funciona con o sin dongle)
+  const [perfil, setPerfil] = useState<PerfilVehiculoUsuario>({
+    modeloId: 'vw_gol_trend',
+    anio: 2021,
+    kmActuales: 56000,
+    dongleConectado: false, // Arranca demostrando que el valor principal no depende del hardware
+    luzTestigoDeclaradaPorUsuario: false,
+    historial: {
+      // Correa original de fábrica a los 56.000 km (intervalo 60.000 km -> 93% consumido -> 'pronto')
+      correa_distribucion: {
+        ultimoCambioKm: 0,
+        mesesDesdeUltimoCambio: 42,
+      },
+      // Aceite hecho hace 8.200 km y 9 meses (intervalo 10.000 km -> 82% consumido -> 'pronto')
+      aceite_filtro: {
+        ultimoCambioKm: 47800,
+        mesesDesdeUltimoCambio: 9,
+      },
+      // Filtro de aire hecho junto con el último cambio de aceite (55% consumido -> 'bien')
+      filtro_aire: {
+        ultimoCambioKm: 47800,
+        mesesDesdeUltimoCambio: 6,
+      },
+      // Batería instalada hace 18 meses (50% consumido -> 'bien')
+      bateria: {
+        mesesDesdeUltimoCambio: 18,
+      },
+      // Refrigerante cambiado hace 12 meses (50% consumido -> 'bien')
+      refrigerante: {
+        ultimoCambioKm: 40000,
+        mesesDesdeUltimoCambio: 12,
+      },
+      // Frenos y Neumáticos arrancan 'sin_datos' para no mostrar un 'Bien' falso
+    },
+  });
 
   const [frame, setFrame] = useState<LiveTelemetryFrame>({
     timestamp: Date.now(),
@@ -39,9 +79,9 @@ export default function App() {
     restingVoltageV: 12.6,
     lastCrankingMinV: 10.35,
     distanceSinceResetKm: 4820,
-    odometerKm: 42500,
+    odometerKm: 56000,
     idleTrafficHours: 48.5,
-    lastOilChangeKm: 35700,
+    lastOilChangeKm: 47800,
     activeDTCs: [],
     pendingDTCs: [],
   });
@@ -49,9 +89,11 @@ export default function App() {
   useEffect(() => {
     const provider = providerRef.current;
     provider.connect();
-    const unsubscribe = provider.subscribeTelemetry((nextFrame: LiveTelemetryFrame) => {
-      setFrame(nextFrame);
-    });
+    const unsubscribe = provider.subscribeTelemetry(
+      (nextFrame: LiveTelemetryFrame) => {
+        setFrame(nextFrame);
+      }
+    );
 
     return () => {
       unsubscribe();
@@ -64,15 +106,86 @@ export default function App() {
     providerRef.current.triggerSimulatedScenario(scenario);
   };
 
-  const electricalReport = evaluateElectricalSystem(frame);
-  const thermalReport = evaluateThermalSystem(frame);
-  const oilReport = evaluateOilAndFluids(frame, 10000);
-  const activeFaults = translateVehicleFaults(frame);
+  const handleToggleDongle = () => {
+    setPerfil((prev) => ({
+      ...prev,
+      dongleConectado: !prev.dongleConectado,
+    }));
+  };
+
+  const handleToggleLuzTestigo = () => {
+    setPerfil((prev) => ({
+      ...prev,
+      luzTestigoDeclaradaPorUsuario: !prev.luzTestigoDeclaradaPorUsuario,
+    }));
+  };
+
+  const handleQuickUpdateComponent = (
+    id: ComponenteId,
+    preset: 'RECIEN_HECHO' | 'MITAD_VIDA' | 'POR_VENCER' | 'DESCONOCIDO'
+  ) => {
+    const modelo =
+      CATALOGO_MODELOS_ARG.find((m) => m.id === perfil.modeloId) ??
+      CATALOGO_MODELOS_ARG[0];
+    const km = perfil.kmActuales;
+
+    const intervaloKmMap: Partial<Record<ComponenteId, number>> = {
+      aceite_filtro: modelo.intervalos.aceiteKm,
+      correa_distribucion: modelo.intervalos.correaKm ?? 60000,
+      refrigerante: modelo.intervalos.refrigeranteKm,
+      frenos: modelo.intervalos.frenosKm,
+      neumaticos: modelo.intervalos.neumaticosRotacionKm,
+      filtro_aire: modelo.intervalos.filtroAireKm,
+    };
+
+    const intKm = intervaloKmMap[id] ?? 10000;
+
+    let nuevoRegistro = {};
+    if (preset === 'RECIEN_HECHO') {
+      nuevoRegistro = {
+        ultimoCambioKm: Math.max(0, km - Math.round(intKm * 0.15)),
+        mesesDesdeUltimoCambio: 2,
+      };
+    } else if (preset === 'MITAD_VIDA') {
+      nuevoRegistro = {
+        ultimoCambioKm: Math.max(0, km - Math.round(intKm * 0.5)),
+        mesesDesdeUltimoCambio: 6,
+      };
+    } else if (preset === 'POR_VENCER') {
+      nuevoRegistro = {
+        ultimoCambioKm: Math.max(0, km - Math.round(intKm * 0.88)),
+        mesesDesdeUltimoCambio: 10,
+      };
+    } else {
+      nuevoRegistro = {
+        desconocidoPorCompraUsado: true,
+      };
+    }
+
+    setPerfil((prev) => ({
+      ...prev,
+      historial: {
+        ...prev.historial,
+        [id]: nuevoRegistro,
+      },
+    }));
+  };
+
+  const chequeo = ejecutarChequeoMedico(
+    perfil,
+    perfil.dongleConectado
+      ? {
+          coolantTempC: frame.coolantTempC,
+          voltageV: frame.voltageInstantV,
+          rpm: frame.rpm,
+          activeDTCs: frame.activeDTCs,
+          pendingDTCs: frame.pendingDTCs,
+        }
+      : undefined
+  );
 
   const hasAlertDot =
-    activeFaults.length > 0 ||
-    thermalReport.severity === 'ROJO' ||
-    electricalReport.alternatorSeverity === 'ROJO';
+    chequeo.conteo.revisar > 0 || chequeo.conteo.pronto > 0;
 
   return (
     <SafeAreaView style={styles.outerShell}>
@@ -82,37 +195,39 @@ export default function App() {
         <View style={styles.mainBody}>
           {activeTab === 'RESUMEN' && (
             <DashboardScreen
-              vehicleName="Volkswagen Gol Trend"
-              plate="AE 492 KL"
+              chequeo={chequeo}
               frame={frame}
-              electricalReport={electricalReport}
-              thermalReport={thermalReport}
-              oilReport={oilReport}
-              activeFaults={activeFaults}
               activeScenario={activeScenario}
               onSelectScenario={handleSelectScenario}
-              onOpenScanner={() => setActiveTab('SALUD')}
-              onOpenWallet={() => setActiveTab('GASTOS')}
+              onToggleDongle={handleToggleDongle}
+              onOpenOnboarding={() => setShowOnboarding(true)}
+              onOpenCheckupTab={() => setActiveTab('CHEQUEO')}
+              onQuickUpdateComponent={handleQuickUpdateComponent}
             />
           )}
 
-          {activeTab === 'SALUD' && (
+          {activeTab === 'CHEQUEO' && (
             <ScannerScreen
-              activeFaults={activeFaults}
-              activeScenario={activeScenario}
-              onSelectScenario={handleSelectScenario}
+              chequeo={chequeo}
+              luzTestigoDeclarada={perfil.luzTestigoDeclaradaPorUsuario}
+              onToggleLuzTestigo={handleToggleLuzTestigo}
+              onOpenOnboarding={() => setShowOnboarding(true)}
+              onQuickUpdateComponent={handleQuickUpdateComponent}
             />
           )}
 
-          {activeTab === 'GASTOS' && (
-            <WalletScreen
-              oilReport={oilReport}
-              activeFaults={activeFaults}
-            />
-          )}
+          {activeTab === 'TALLER' && <WalletScreen chequeo={chequeo} />}
         </View>
 
-        {/* Floating Bottom Pill Navigation Bar (Stitch Exact: 3 Tabs + Lucide Vector Icons) */}
+        {/* Modal de Carga Inicial / Configuración de 3 Pasos */}
+        <OnboardingModal
+          visible={showOnboarding}
+          perfilActual={perfil}
+          onSavePerfil={setPerfil}
+          onClose={() => setShowOnboarding(false)}
+        />
+
+        {/* Floating Bottom Pill Navigation Bar (3 Pestañas Mobile) */}
         <View style={styles.bottomNavWrapper} pointerEvents="box-none">
           <View style={styles.bottomNavPill}>
             <TouchableOpacity
@@ -142,53 +257,60 @@ export default function App() {
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                activeTab === 'SALUD' && styles.tabButtonActive,
+                activeTab === 'CHEQUEO' && styles.tabButtonActive,
               ]}
-              onPress={() => setActiveTab('SALUD')}
+              onPress={() => setActiveTab('CHEQUEO')}
               activeOpacity={0.85}
             >
               <View style={styles.iconWithBadge}>
-                <ShieldCheck
+                <ClipboardCheck
                   size={20}
                   color={
-                    activeTab === 'SALUD' ? '#FFFFFF' : Colors.textSecondary
+                    activeTab === 'CHEQUEO' ? '#FFFFFF' : Colors.textSecondary
                   }
                 />
-                {hasAlertDot && activeTab !== 'SALUD' && (
-                  <View style={styles.tabAlertDot} />
+                {hasAlertDot && activeTab !== 'CHEQUEO' && (
+                  <View
+                    style={[
+                      styles.tabAlertDot,
+                      chequeo.conteo.revisar > 0 && {
+                        backgroundColor: Colors.dangerRed,
+                      },
+                    ]}
+                  />
                 )}
               </View>
               <Text
                 style={[
                   styles.tabLabel,
-                  activeTab === 'SALUD' && styles.tabLabelActive,
+                  activeTab === 'CHEQUEO' && styles.tabLabelActive,
                 ]}
               >
-                Salud
+                Chequeo
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                activeTab === 'GASTOS' && styles.tabButtonActive,
+                activeTab === 'TALLER' && styles.tabButtonActive,
               ]}
-              onPress={() => setActiveTab('GASTOS')}
+              onPress={() => setActiveTab('TALLER')}
               activeOpacity={0.85}
             >
-              <Wallet
+              <MessageSquareQuote
                 size={20}
                 color={
-                  activeTab === 'GASTOS' ? '#FFFFFF' : Colors.textSecondary
+                  activeTab === 'TALLER' ? '#FFFFFF' : Colors.textSecondary
                 }
               />
               <Text
                 style={[
                   styles.tabLabel,
-                  activeTab === 'GASTOS' && styles.tabLabelActive,
+                  activeTab === 'TALLER' && styles.tabLabelActive,
                 ]}
               >
-                Gastos
+                Guía Taller
               </Text>
             </TouchableOpacity>
           </View>

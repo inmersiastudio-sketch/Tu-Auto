@@ -1,85 +1,71 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import {
-  Bell,
-  User,
-  Gauge,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import {
+  SlidersHorizontal,
   Thermometer,
-  Wrench,
-  Clock,
+  BatteryCharging,
   ChevronRight,
-  Zap,
-  ShieldAlert,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  HelpCircle,
+  Bluetooth,
+  Smartphone,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { LiveTelemetryFrame, ScenarioId } from '../modules/obd2-engine/types';
-import { ElectricalHealthReport } from '../modules/electrical-guard/electricalEngine';
-import { ThermalHealthReport } from '../modules/thermal-shield/thermalEngine';
-import { OilAndFluidReport } from '../modules/oil-tracker/oilEngine';
-import { TranslatedFaultCard } from '../modules/fault-translator/faultCatalog';
+import {
+  ComponenteId,
+  ResumenChequeoMedico,
+} from '../modules/medical-checkup/checkupEngine';
 import { Car3DShowcase } from '../components/Car3DShowcase';
 import { DemoControlBar } from '../components/DemoControlBar';
-import { Colors, DEFAULT_EXCHANGE_RATE_ARS } from '../theme/colors';
+import { CheckupComponentCard } from '../components/CheckupComponentCard';
+import { Colors } from '../theme/colors';
 
 interface Props {
-  vehicleName: string;
-  plate: string;
+  chequeo: ResumenChequeoMedico;
   frame: LiveTelemetryFrame;
-  electricalReport: ElectricalHealthReport;
-  thermalReport: ThermalHealthReport;
-  oilReport: OilAndFluidReport;
-  activeFaults: TranslatedFaultCard[];
   activeScenario: ScenarioId;
   onSelectScenario: (scenario: ScenarioId) => void;
-  onOpenScanner: () => void;
-  onOpenWallet: () => void;
+  onToggleDongle: () => void;
+  onOpenOnboarding: () => void;
+  onOpenCheckupTab: () => void;
+  onQuickUpdateComponent: (
+    id: ComponenteId,
+    preset: 'RECIEN_HECHO' | 'MITAD_VIDA' | 'POR_VENCER' | 'DESCONOCIDO'
+  ) => void;
 }
 
 export const DashboardScreen: React.FC<Props> = ({
-  vehicleName,
-  plate,
+  chequeo,
   frame,
-  electricalReport,
-  thermalReport,
-  oilReport,
-  activeFaults,
   activeScenario,
   onSelectScenario,
-  onOpenScanner,
-  onOpenWallet,
+  onToggleDongle,
+  onOpenOnboarding,
+  onOpenCheckupTab,
+  onQuickUpdateComponent,
 }) => {
-  const worstStatus: 'GREEN' | 'YELLOW' | 'RED' =
-    electricalReport.alternatorSeverity === 'ROJO' ||
-    electricalReport.batteryStatus === 'ROJO' ||
-    thermalReport.severity === 'ROJO' ||
-    oilReport.severity === 'ROJO' ||
-    activeFaults.some((f) => f.severity === 'ROJO')
+  const overallHeroColor: 'GREEN' | 'YELLOW' | 'RED' =
+    chequeo.estadoGlobal === 'revisar'
       ? 'RED'
-      : electricalReport.alternatorSeverity === 'AMARILLO' ||
-        electricalReport.batteryStatus === 'AMARILLO' ||
-        thermalReport.severity === 'AMARILLO' ||
-        oilReport.severity === 'AMARILLO' ||
-        activeFaults.length > 0
+      : chequeo.estadoGlobal === 'pronto'
       ? 'YELLOW'
       : 'GREEN';
 
-  const statusHeadline =
-    worstStatus === 'RED'
-      ? thermalReport.severity === 'ROJO'
-        ? thermalReport.headline
-        : electricalReport.alternatorSeverity === 'ROJO'
-        ? electricalReport.alternatorHeadline
-        : electricalReport.batteryHeadline
-      : worstStatus === 'YELLOW'
-      ? activeFaults.length > 0
-        ? activeFaults[0].humanTitle
-        : 'Mantenimiento preventivo sugerido'
-      : 'Todo en orden para salir a manejar';
-
-  const isDriving = frame.rpm > 400;
-  const remainingServiceKm = Math.max(
-    0,
-    oilReport.intervalTargetKm - oilReport.equivalentWearKm
-  );
+  // Componentes que requieren atención ('revisar' o 'pronto'), priorizando correa
+  const componentesAtencion = chequeo.componentes
+    .filter(
+      (c) => c.aplicaAlModelo && (c.estado === 'revisar' || c.estado === 'pronto')
+    )
+    .sort((a, b) => (a.esCritico === b.esCritico ? 0 : a.esCritico ? -1 : 1));
 
   return (
     <ScrollView
@@ -87,289 +73,277 @@ export const DashboardScreen: React.FC<Props> = ({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Top App Bar (Stitch Exact: BUEN DÍA / Resumen + Bell + User) */}
+      {/* Top App Bar Mobile: Título + Botón para cambiar auto / km */}
       <View style={styles.topHeader}>
         <View>
-          <Text style={styles.greetingSup}>BUEN DÍA</Text>
+          <Text style={styles.greetingSup}>CONTROL DE SALUD VEHICULAR</Text>
           <Text style={styles.pageTitle}>Resumen</Text>
         </View>
+
         <View style={styles.topActionsRow}>
           <TouchableOpacity
-            style={styles.iconCircleBtn}
-            onPress={onOpenScanner}
-            activeOpacity={0.8}
+            style={styles.editAutoPill}
+            onPress={onOpenOnboarding}
+            activeOpacity={0.85}
           >
-            <Bell size={19} color={Colors.textPrimary} />
-            <View
-              style={[
-                styles.notifDot,
-                {
-                  backgroundColor:
-                    worstStatus === 'GREEN' ? Colors.warnAmber : Colors.dangerRed,
-                },
-              ]}
-            />
+            <SlidersHorizontal size={14} color={Colors.brandPrimaryDark} />
+            <Text style={styles.editAutoPillText}>Mi auto / Km</Text>
           </TouchableOpacity>
-          <View style={styles.avatarCircle}>
-            <User size={19} color={Colors.brandPrimaryDark} />
-          </View>
         </View>
       </View>
 
-      {/* Simulador OBD2 colapsable para pruebas en vivo */}
-      <DemoControlBar
-        activeScenario={activeScenario}
-        onSelectScenario={onSelectScenario}
-      />
+      {/* Selector rápido de modo: Sin Dongle (Estimado) vs Con Dongle (Medido en vivo) */}
+      <View style={styles.connectionBanner}>
+        <View style={styles.connectionLeft}>
+          {chequeo.dongleConectado ? (
+            <Bluetooth size={15} color={Colors.brandPrimary} />
+          ) : (
+            <Smartphone size={15} color={Colors.textSecondary} />
+          )}
+          <Text style={styles.connectionText}>
+            {chequeo.dongleConectado
+              ? 'Dongle OBD2 activo · Midiendo signos vitales'
+              : 'Modo sin dongle · Calculado por km, fecha y manual'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.switchDongleBtn}
+          onPress={onToggleDongle}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.switchDongleText}>
+            {chequeo.dongleConectado ? 'Probar sin dongle' : 'Conectar OBD2'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Hero Section: Connected Vehicle Card con Vector Hatchback y Pintura Personalizable */}
+      {/* Si el dongle está conectado, mostramos el simulador interactivo de escenarios */}
+      {chequeo.dongleConectado && (
+        <DemoControlBar
+          activeScenario={activeScenario}
+          onSelectScenario={onSelectScenario}
+        />
+      )}
+
+      {/* Hero Section: Vehículo 3D/SVG con Selector de Pintura */}
       <Car3DShowcase
-        vehicleName={vehicleName}
-        vehicleTrim="1.6 MSI"
+        vehicleName={`${chequeo.modelo.marca} ${chequeo.modelo.modelo}`}
+        vehicleTrim={`${chequeo.modelo.motor} · ${chequeo.kmActuales.toLocaleString('es-AR')} km`}
         vehicleYear={2021}
-        plate={plate}
-        overallStatus={worstStatus}
-        statusHeadline={statusHeadline}
-        isDriving={isDriving}
+        plate="AE 492 KL"
+        overallStatus={overallHeroColor}
+        statusHeadline={chequeo.tituloResumen}
+        isDriving={chequeo.dongleConectado && frame.rpm > 400}
         rpm={frame.rpm}
-        onPressStatusBadge={onOpenScanner}
+        onPressStatusBadge={onOpenCheckupTab}
       />
 
-      {/* Quick Stats Grid: SEGUIMIENTO (3 Tarjetas Blancas Limpias con Iconos Vectoriales) */}
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionLabel}>SEGUIMIENTO</Text>
-          <Text style={styles.sectionSubLabel}>Sincronizado vía OBD2</Text>
+      {/* RESUMEN ÚNICO ARRIBA DE TODO: "¿Cómo está mi auto?" */}
+      <TouchableOpacity
+        style={styles.medicalSummaryCard}
+        onPress={onOpenCheckupTab}
+        activeOpacity={0.9}
+      >
+        <View style={styles.summaryTopRow}>
+          <View style={styles.summaryTitleCol}>
+            <Text style={styles.summarySup}>¿CÓMO ESTÁ MI AUTO HOY?</Text>
+            <Text style={styles.summaryHeadline}>{chequeo.tituloResumen}</Text>
+            <Text style={styles.summarySub}>{chequeo.subtituloResumen}</Text>
+          </View>
+          <View style={styles.summaryArrowCircle}>
+            <ChevronRight size={18} color={Colors.brandPrimaryDark} />
+          </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          {/* Stat 1: Kilómetros */}
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrap, { backgroundColor: Colors.safeGreenBg }]}>
-              <Gauge size={18} color={Colors.safeGreenDark} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>
-                {frame.odometerKm.toLocaleString('es-AR')}
-              </Text>
-              <Text style={styles.statTitle}>Kilómetros</Text>
-              <Text style={[styles.statMicro, { color: Colors.safeGreenDark }]}>
-                +320 esta sem.
-              </Text>
-            </View>
+        {/* Contadores de los 4 estados del Chequeo Médico */}
+        <View style={styles.countsGrid}>
+          <View style={[styles.countPill, { backgroundColor: Colors.safeGreenBg }]}>
+            <CheckCircle2 size={13} color={Colors.safeGreenDark} />
+            <Text style={[styles.countPillText, { color: Colors.safeGreenDark }]}>
+              {chequeo.conteo.bien} Bien
+            </Text>
           </View>
 
-          {/* Stat 2: Temperatura Motor / Agua */}
-          <TouchableOpacity
-            style={styles.statCard}
-            onPress={onOpenScanner}
-            activeOpacity={0.85}
-          >
-            <View
-              style={[
-                styles.statIconWrap,
-                {
-                  backgroundColor:
-                    thermalReport.severity === 'ROJO'
-                      ? Colors.dangerRedBg
-                      : Colors.infoSkyBg,
-                },
-              ]}
-            >
-              <Thermometer
-                size={18}
-                color={
-                  thermalReport.severity === 'ROJO'
-                    ? Colors.dangerRed
-                    : Colors.infoSky
-                }
-              />
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.statValue,
-                  thermalReport.severity === 'ROJO' && { color: Colors.dangerRed },
-                ]}
-              >
+          <View style={[styles.countPill, { backgroundColor: Colors.warnAmberBg }]}>
+            <Clock size={13} color={Colors.warnAmberDark} />
+            <Text style={[styles.countPillText, { color: Colors.warnAmberDark }]}>
+              {chequeo.conteo.pronto} Pronto
+            </Text>
+          </View>
+
+          <View style={[styles.countPill, { backgroundColor: Colors.dangerRedBg }]}>
+            <AlertTriangle size={13} color={Colors.dangerRedDark} />
+            <Text style={[styles.countPillText, { color: Colors.dangerRedDark }]}>
+              {chequeo.conteo.revisar} Revisar
+            </Text>
+          </View>
+
+          <View style={[styles.countPill, { backgroundColor: Colors.bgElevated }]}>
+            <HelpCircle size={13} color={Colors.textSecondary} />
+            <Text style={[styles.countPillText, { color: Colors.textSecondary }]}>
+              {chequeo.conteo.sinDatos} Sin datos
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {/* SIGNOS VITALES (Solo medidos en vivo si hay dongle, o aclaración honesta si no hay) */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>SIGNOS VITALES</Text>
+          <Text style={styles.sectionSubLabel}>
+            {chequeo.dongleConectado ? 'Medido en vivo por OBD2' : 'Opcional con dongle'}
+          </Text>
+        </View>
+
+        {chequeo.dongleConectado ? (
+          <View style={styles.vitalsRow}>
+            <View style={styles.vitalCard}>
+              <View style={styles.vitalTop}>
+                <View
+                  style={[
+                    styles.vitalIconWrap,
+                    {
+                      backgroundColor:
+                        frame.coolantTempC >= 100
+                          ? Colors.dangerRedBg
+                          : Colors.infoSkyBg,
+                    },
+                  ]}
+                >
+                  <Thermometer
+                    size={18}
+                    color={
+                      frame.coolantTempC >= 100
+                        ? Colors.dangerRed
+                        : Colors.infoSky
+                    }
+                  />
+                </View>
+                <View style={styles.measuredTag}>
+                  <Text style={styles.measuredTagText}>Medido</Text>
+                </View>
+              </View>
+              <Text style={styles.vitalValue}>
                 {Math.round(frame.coolantTempC)}°C
               </Text>
-              <Text style={styles.statTitle}>Motor / Agua</Text>
+              <Text style={styles.vitalLabel}>Temperatura motor</Text>
               <Text
                 style={[
-                  styles.statMicro,
+                  styles.vitalStatusText,
                   {
                     color:
-                      thermalReport.severity === 'VERDE'
-                        ? Colors.textMuted
-                        : Colors.dangerRed,
+                      frame.coolantTempC >= 100
+                        ? Colors.dangerRedDark
+                        : Colors.safeGreenDark,
                   },
                 ]}
               >
-                {thermalReport.severity === 'VERDE' ? 'Estable (90°C)' : 'Revisar ya'}
+                {frame.coolantTempC >= 100
+                  ? 'Revisar: Muy caliente'
+                  : 'Bien (Rango normal ~90°C)'}
               </Text>
             </View>
-          </TouchableOpacity>
 
-          {/* Stat 3: Próximo Service */}
-          <TouchableOpacity
-            style={styles.statCard}
-            onPress={onOpenWallet}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.statIconWrap, { backgroundColor: Colors.warnAmberBg }]}>
-              <Wrench size={18} color={Colors.warnAmberDark} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>
-                {remainingServiceKm.toLocaleString('es-AR')} km
+            <View style={styles.vitalCard}>
+              <View style={styles.vitalTop}>
+                <View
+                  style={[
+                    styles.vitalIconWrap,
+                    {
+                      backgroundColor:
+                        frame.voltageInstantV < 13.2
+                          ? Colors.dangerRedBg
+                          : Colors.safeGreenBg,
+                    },
+                  ]}
+                >
+                  <BatteryCharging
+                    size={18}
+                    color={
+                      frame.voltageInstantV < 13.2
+                        ? Colors.dangerRed
+                        : Colors.safeGreenDark
+                    }
+                  />
+                </View>
+                <View style={styles.measuredTag}>
+                  <Text style={styles.measuredTagText}>Medido</Text>
+                </View>
+              </View>
+              <Text style={styles.vitalValue}>
+                {frame.voltageInstantV.toFixed(1)} V
               </Text>
-              <Text style={styles.statTitle}>Próx. service</Text>
-              <Text style={[styles.statMicro, { color: Colors.warnAmberDark }]}>
-                Vida aceite {Math.round(oilReport.oilLifeRemainingPercent)}%
+              <Text style={styles.vitalLabel}>Carga eléctrica</Text>
+              <Text
+                style={[
+                  styles.vitalStatusText,
+                  {
+                    color:
+                      frame.voltageInstantV < 13.2
+                        ? Colors.dangerRedDark
+                        : Colors.safeGreenDark,
+                  },
+                ]}
+              >
+                {frame.voltageInstantV < 13.2
+                  ? 'Revisar carga de alternador'
+                  : 'Bien (Alternador cargando)'}
               </Text>
             </View>
-          </TouchableOpacity>
-        </View>
+          </View>
+        ) : (
+          <View style={styles.noDongleHonestCard}>
+            <ShieldCheck size={18} color={Colors.brandPrimary} />
+            <View style={styles.noDongleTextCol}>
+              <Text style={styles.noDongleTitle}>
+                Chequeo preventivo funcionando sin dongle
+              </Text>
+              <Text style={styles.noDongleDesc}>
+                Tus controles de aceite, correa, frenos y neumáticos se calculan
+                con los kilómetros y el manual de tu {chequeo.modelo.modelo}. No
+                necesitás enchufar nada para llevar tu auto al día.
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* Banner Ámbar o Coral de Próximo Mantenimiento / Diagnóstico (Stitch Exact) */}
-      <TouchableOpacity
-        style={[
-          styles.maintenanceBanner,
-          worstStatus === 'RED' && styles.maintenanceBannerRed,
-        ]}
-        onPress={worstStatus === 'GREEN' ? onOpenWallet : onOpenScanner}
-        activeOpacity={0.88}
-      >
-        <View
-          style={[
-            styles.bannerIconBox,
-            worstStatus === 'RED' && styles.bannerIconBoxRed,
-          ]}
-        >
-          {worstStatus === 'RED' ? (
-            <ShieldAlert size={22} color={Colors.dangerRedDark} />
-          ) : (
-            <Clock size={22} color={Colors.warnAmberDark} />
-          )}
+      {/* COMPONENTES PARA ATENDER PRONTO O REVISAR */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>
+            {componentesAtencion.length > 0
+              ? 'ATENCIÓN SUGERIDA'
+              : 'ESTUDIOS DE RUTINA'}
+          </Text>
+          <TouchableOpacity onPress={onOpenCheckupTab}>
+            <Text style={styles.seeAllLink}>Ver los 8 componentes</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.bannerTextCol}>
-          <View style={styles.bannerTagRow}>
-            <Text
-              style={[
-                styles.bannerTagText,
-                worstStatus === 'RED' && { color: Colors.dangerRedDark },
-              ]}
-            >
-              {worstStatus === 'GREEN'
-                ? 'PRÓXIMO MANTENIMIENTO'
-                : 'DIAGNÓSTICO DETECTADO'}
-            </Text>
-            <View
-              style={[
-                styles.bannerDot,
-                {
-                  backgroundColor:
-                    worstStatus === 'RED' ? Colors.dangerRed : Colors.warnAmber,
-                },
-              ]}
+        {componentesAtencion.length > 0 ? (
+          componentesAtencion.map((item) => (
+            <CheckupComponentCard
+              key={item.id}
+              item={item}
+              kmActuales={chequeo.kmActuales}
+              onQuickUpdateComponent={onQuickUpdateComponent}
             />
-          </View>
-          <Text
-            style={[
-              styles.bannerTitle,
-              worstStatus === 'RED' && { color: '#7F1D1D' },
-            ]}
-          >
-            {worstStatus === 'GREEN'
-              ? 'Cambio de aceite y revisión'
-              : statusHeadline}
-          </Text>
-          <Text
-            style={[
-              styles.bannerSub,
-              worstStatus === 'RED' && { color: Colors.dangerRedDark },
-            ]}
-          >
-            {worstStatus === 'GREEN'
-              ? `En ${oilReport.estimatedDaysRemaining} días • Estimado $65.000`
-              : activeFaults.length > 0
-              ? `Arreglar hoy: $${Math.round(activeFaults[0].fixTodayCostUsd.min * DEFAULT_EXCHANGE_RATE_ARS).toLocaleString('es-AR')} • Evitá gastar $${Math.round(activeFaults[0].ignoreDamageCostUsd * DEFAULT_EXCHANGE_RATE_ARS).toLocaleString('es-AR')}`
-              : 'Tocar para ver explicación simple y costos'}
-          </Text>
-        </View>
-
-        <View style={styles.bannerArrowCircle}>
-          <ChevronRight
-            size={18}
-            color={worstStatus === 'RED' ? Colors.dangerRedDark : Colors.warnAmberDark}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {/* Tarjeta Inferior Rápida de Salud Eléctrica y Sensores (Stitch Quick Health Insights) */}
-      <TouchableOpacity
-        style={styles.quickInsightCard}
-        onPress={onOpenScanner}
-        activeOpacity={0.85}
-      >
-        <View style={styles.quickLeftRow}>
-          <View style={styles.quickIconBox}>
-            <Zap size={20} color={Colors.brandPrimary} />
-          </View>
-          <View style={styles.quickTextWrap}>
-            <Text style={styles.quickTitle}>
-              Sistema eléctrico ({frame.voltageInstantV.toFixed(1)} V)
+          ))
+        ) : (
+          <View style={styles.allGoodCard}>
+            <CheckCircle2 size={24} color={Colors.safeGreenDark} />
+            <Text style={styles.allGoodTitle}>
+              No tenés vencimientos urgentes este mes
             </Text>
-            <Text style={styles.quickSub} numberOfLines={1}>
-              {electricalReport.alternatorSeverity === 'VERDE' &&
-              electricalReport.batteryStatus === 'VERDE'
-                ? 'Batería y alternador en rango óptimo'
-                : electricalReport.alternatorSeverity !== 'VERDE'
-                ? electricalReport.alternatorHeadline
-                : electricalReport.batteryHeadline}
+            <Text style={styles.allGoodSub}>
+              Tocá "Ver los 8 componentes" para revisar el porcentaje de cada
+              uno o completar los que están sin datos.
             </Text>
           </View>
-        </View>
-
-        <View
-          style={[
-            styles.okBadge,
-            (electricalReport.alternatorSeverity !== 'VERDE' ||
-              electricalReport.batteryStatus !== 'VERDE') &&
-              styles.warnBadge,
-          ]}
-        >
-          <View
-            style={[
-              styles.okDot,
-              {
-                backgroundColor:
-                  electricalReport.alternatorSeverity === 'VERDE' &&
-                  electricalReport.batteryStatus === 'VERDE'
-                    ? Colors.safeGreen
-                    : Colors.dangerRed,
-              },
-            ]}
-          />
-          <Text
-            style={[
-              styles.okBadgeText,
-              (electricalReport.alternatorSeverity !== 'VERDE' ||
-                electricalReport.batteryStatus !== 'VERDE') && {
-                color: Colors.dangerRedDark,
-              },
-            ]}
-          >
-            {electricalReport.alternatorSeverity === 'VERDE' &&
-            electricalReport.batteryStatus === 'VERDE'
-              ? 'OK'
-              : 'Ver'}
-          </Text>
-        </View>
-      </TouchableOpacity>
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -388,13 +362,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   greetingSup: {
     color: Colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.9,
   },
   pageTitle: {
     color: Colors.textPrimary,
@@ -405,36 +379,123 @@ const styles = StyleSheet.create({
   topActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  iconCircleBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  editAutoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.bgHigh,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+  },
+  editAutoPillText: {
+    color: Colors.brandPrimaryDark,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  connectionBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+  },
+  connectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flex: 1,
+  },
+  connectionText: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    flex: 1,
+  },
+  switchDongleBtn: {
+    backgroundColor: Colors.bgElevated,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  switchDongleText: {
+    color: Colors.brandPrimary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  medicalSummaryCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    shadowColor: '#181445',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
+  },
+  summaryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  summaryTitleCol: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  summarySup: {
+    color: Colors.brandPrimary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  summaryHeadline: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  summarySub: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  summaryArrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  notifDot: {
-    position: 'absolute',
-    top: 9,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: Colors.bgPrimary,
+  countsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
   },
-  avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.bgHigh,
+  countPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  countPillText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   sectionBlock: {
     marginBottom: 20,
@@ -444,7 +505,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-    paddingHorizontal: 2,
   },
   sectionLabel: {
     color: Colors.textSecondary,
@@ -453,176 +513,110 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
   },
   sectionSubLabel: {
-    color: Colors.brandPrimary,
+    color: Colors.textMuted,
     fontSize: 11,
     fontWeight: '600',
   },
-  statsGrid: {
+  seeAllLink: {
+    color: Colors.brandPrimary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  vitalsRow: {
     flexDirection: 'row',
     gap: 10,
   },
-  statCard: {
+  vitalCard: {
     flex: 1,
     backgroundColor: Colors.bgCard,
     borderRadius: 18,
-    padding: 13,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
-    justifyContent: 'space-between',
-    minHeight: 118,
-    shadowColor: '#181445',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    elevation: 2,
   },
-  statIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
+  vitalTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  vitalIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
-  statValue: {
-    color: Colors.textPrimary,
-    fontSize: 17,
+  measuredTag: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  measuredTagText: {
+    color: Colors.brandPrimary,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: -0.3,
   },
-  statTitle: {
+  vitalValue: {
+    color: Colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  vitalLabel: {
     color: Colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     marginTop: 2,
   },
-  statMicro: {
-    fontSize: 10,
+  vitalStatusText: {
+    fontSize: 11,
     fontWeight: '700',
     marginTop: 4,
   },
-  maintenanceBanner: {
+  noDongleHonestCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: Colors.warnAmberBg,
-    borderWidth: 1,
-    borderColor: Colors.warnAmberBorder,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 18,
-  },
-  maintenanceBannerRed: {
-    backgroundColor: Colors.dangerRedBg,
-    borderColor: Colors.dangerRedBorder,
-  },
-  bannerIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerIconBoxRed: {
-    backgroundColor: '#FEE2E2',
-  },
-  bannerTextCol: {
-    flex: 1,
-  },
-  bannerTagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  bannerTagText: {
-    color: Colors.warnAmberDark,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  bannerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  bannerTitle: {
-    color: '#451A03',
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  bannerSub: {
-    color: Colors.warnAmberText,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  bannerArrowCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(253, 230, 138, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickInsightCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
     backgroundColor: Colors.bgCard,
     borderRadius: 18,
-    padding: 16,
+    padding: 15,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
   },
-  quickLeftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  noDongleTextCol: {
     flex: 1,
   },
-  quickIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickTextWrap: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  quickTitle: {
+  noDongleTitle: {
     color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
   },
-  quickSub: {
+  noDongleDesc: {
     color: Colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    lineHeight: 17,
+    marginTop: 3,
   },
-  okBadge: {
-    flexDirection: 'row',
+  allGoodCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 18,
+    padding: 20,
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.safeGreenBg,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
-  warnBadge: {
-    backgroundColor: Colors.dangerRedBg,
-  },
-  okDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  okBadgeText: {
-    color: Colors.safeGreenDark,
-    fontSize: 12,
+  allGoodTitle: {
+    color: Colors.textPrimary,
+    fontSize: 15,
     fontWeight: '800',
+    marginTop: 8,
+  },
+  allGoodSub: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 17,
   },
 });
