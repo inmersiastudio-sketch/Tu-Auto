@@ -11,7 +11,7 @@ export interface Car3DWebGLProps {
 }
 
 /**
- * Crea una textura radial suave en un canvas 2D para la sombra de contacto en el piso blanco.
+ * Textura radial suave para la sombra de contacto en el piso blanco de estudio.
  */
 function createContactShadowTexture(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
@@ -25,13 +25,13 @@ function createContactShadowTexture(): THREE.CanvasTexture | null {
   const grad = ctx.createRadialGradient(
     canvas.width / 2,
     canvas.height / 2,
-    12,
+    14,
     canvas.width / 2,
     canvas.height / 2,
     canvas.width / 2
   );
-  grad.addColorStop(0, 'rgba(15, 23, 42, 0.34)');
-  grad.addColorStop(0.55, 'rgba(15, 23, 42, 0.16)');
+  grad.addColorStop(0, 'rgba(15, 23, 42, 0.38)');
+  grad.addColorStop(0.5, 'rgba(15, 23, 42, 0.18)');
   grad.addColorStop(1, 'rgba(15, 23, 42, 0.0)');
 
   ctx.fillStyle = grad;
@@ -43,57 +43,56 @@ function createContactShadowTexture(): THREE.CanvasTexture | null {
 }
 
 /**
- * Construye una rueda 3D detallada (Neumático con hombro redondeado + Llanta de aleación 5 rayos + Disco + Caliper).
+ * Construye una rueda 3D detallada con neumático de goma y llanta de aleación con 5 rayos.
  */
 function buildWheelMesh(radius: number, width: number): THREE.Group {
   const wheelGroup = new THREE.Group();
 
   const tireMat = new THREE.MeshStandardMaterial({
     color: 0x1e293b,
-    roughness: 0.78,
+    roughness: 0.8,
     metalness: 0.1,
   });
 
   const rimMat = new THREE.MeshStandardMaterial({
     color: 0xe2e8f0,
-    roughness: 0.22,
+    roughness: 0.2,
     metalness: 0.85,
   });
 
-  const darkRimMat = new THREE.MeshStandardMaterial({
+  const darkInnerRim = new THREE.MeshStandardMaterial({
     color: 0x0f172a,
     roughness: 0.5,
     metalness: 0.4,
   });
 
-  // Banda de rodamiento principal
-  const tireCyl = new THREE.Mesh(
+  // Neumático
+  const tire = new THREE.Mesh(
     new THREE.CylinderGeometry(radius, radius, width, 32),
     tireMat
   );
-  tireCyl.rotation.x = Math.PI / 2;
-  wheelGroup.add(tireCyl);
+  tire.rotation.x = Math.PI / 2;
+  wheelGroup.add(tire);
 
-  // Interior oscuro de la llanta
+  // Interior de la llanta
   const innerRim = new THREE.Mesh(
     new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, width * 1.02, 24),
-    darkRimMat
+    darkInnerRim
   );
   innerRim.rotation.x = Math.PI / 2;
   wheelGroup.add(innerRim);
 
-  // Aro cromado exterior e interior
+  // Rayos y aro exterior
   [-1, 1].forEach((side) => {
     const zOffset = side * (width / 2);
-    const rimRing = new THREE.Mesh(
-      new THREE.RingGeometry(radius * 0.55, radius * 0.72, 28),
+    const outerRing = new THREE.Mesh(
+      new THREE.RingGeometry(radius * 0.56, radius * 0.72, 28),
       rimMat
     );
-    if (side < 0) rimRing.rotation.y = Math.PI;
-    rimRing.position.z = zOffset + side * 0.005;
-    wheelGroup.add(rimRing);
+    if (side < 0) outerRing.rotation.y = Math.PI;
+    outerRing.position.z = zOffset + side * 0.005;
+    wheelGroup.add(outerRing);
 
-    // 5 rayos deportivos
     for (let i = 0; i < 5; i++) {
       const angle = (i * Math.PI * 2) / 5;
       const spoke = new THREE.Mesh(
@@ -109,7 +108,6 @@ function buildWheelMesh(radius: number, width: number): THREE.Group {
       wheelGroup.add(spoke);
     }
 
-    // Centro de llanta
     const hub = new THREE.Mesh(
       new THREE.CylinderGeometry(radius * 0.18, radius * 0.18, 0.03, 16),
       rimMat
@@ -123,11 +121,8 @@ function buildWheelMesh(radius: number, width: number): THREE.Group {
 }
 
 /**
- * Construye la geometría 3D esculpida para cada una de las 4 carrocerías universales:
- * - hatchback (VW Gol Trend / Peugeot 208 / Ka)
- * - sedan (Fiat Cronos / Toyota Etios)
- * - pickup (Toyota Hilux)
- * - suv (Chevrolet Tracker / Stepway)
+ * Construye la carrocería en 3 capas geométricas separadas (Lower Body, Glass Canopy, Roof Cap)
+ * para eliminar 100% el solapamiento coplanar (Z-fighting) entre la chapa y el vidrio.
  */
 function buildCarBodyGroup(
   bodyType: TipoCarroceria,
@@ -137,8 +132,8 @@ function buildCarBodyGroup(
 
   const glassMaterial = new THREE.MeshPhysicalMaterial({
     color: 0x0f172a,
-    roughness: 0.08,
-    metalness: 0.15,
+    roughness: 0.1,
+    metalness: 0.2,
     clearcoat: 1.0,
     clearcoatRoughness: 0.05,
   });
@@ -159,7 +154,7 @@ function buildCarBodyGroup(
   const taillightMaterial = new THREE.MeshStandardMaterial({
     color: 0xef4444,
     emissive: 0xdc2626,
-    emissiveIntensity: 0.55,
+    emissiveIntensity: 0.6,
     roughness: 0.15,
   });
 
@@ -169,133 +164,171 @@ function buildCarBodyGroup(
     metalness: 0.8,
   });
 
-  // Parámetros por tipo de carrocería
-  const bodyWidth = bodyType === 'pickup' || bodyType === 'suv' ? 1.52 : 1.44;
+  const bodyWidth = bodyType === 'pickup' || bodyType === 'suv' ? 1.54 : 1.44;
   const wheelRadius =
     bodyType === 'pickup' ? 0.42 : bodyType === 'suv' ? 0.39 : 0.35;
   const wheelWidth = 0.24;
   const wheelBaseHalf =
     bodyType === 'pickup' ? 1.28 : bodyType === 'sedan' ? 1.18 : 1.1;
 
-  // 1. Perfil lateral inferior + carrocería principal esculpida con curvas Bezier
-  const bodyShape = new THREE.Shape();
-  const cabinGlassShape = new THREE.Shape();
+  // =========================================================================
+  // 1. CARROCERÍA INFERIOR (Solo chapa, hasta la línea de cintura de las ventanas)
+  // No contiene vidrio, por lo que NUNCA se superpone con la cabina.
+  // =========================================================================
+  const lowerBodyShape = new THREE.Shape();
+  let beltlineY = 0.85;
 
   if (bodyType === 'hatchback') {
-    // Silueta Hatchback (Gol Trend / 208)
-    bodyShape.moveTo(-1.72, 0.28);
-    bodyShape.quadraticCurveTo(-1.78, 0.55, -1.62, 0.78); // Paragolpe trasero
-    bodyShape.lineTo(-1.38, 1.32); // Portón trasero inclinado
-    bodyShape.quadraticCurveTo(-1.32, 1.38, -1.15, 1.38); // Spoiler de techo
-    bodyShape.quadraticCurveTo(-0.35, 1.42, 0.22, 1.32); // Arco del techo
-    bodyShape.lineTo(0.85, 0.86); // Parabrisas lanzado
-    bodyShape.quadraticCurveTo(1.42, 0.8, 1.68, 0.64); // Capot deportivo
-    bodyShape.quadraticCurveTo(1.78, 0.48, 1.72, 0.26); // Trompa delantera
-    bodyShape.lineTo(-1.72, 0.28);
-
-    // Ventanillas laterales + parabrisas
-    cabinGlassShape.moveTo(-1.24, 0.86);
-    cabinGlassShape.lineTo(-1.08, 1.28);
-    cabinGlassShape.quadraticCurveTo(-0.35, 1.32, 0.18, 1.24);
-    cabinGlassShape.lineTo(0.74, 0.86);
-    cabinGlassShape.lineTo(-1.24, 0.86);
+    // Gol Trend / 208
+    beltlineY = 0.84;
+    lowerBodyShape.moveTo(-1.72, 0.28);
+    lowerBodyShape.quadraticCurveTo(-1.76, 0.58, -1.62, beltlineY);
+    lowerBodyShape.lineTo(0.82, beltlineY);
+    lowerBodyShape.quadraticCurveTo(1.42, 0.78, 1.68, 0.64);
+    lowerBodyShape.quadraticCurveTo(1.78, 0.48, 1.72, 0.26);
+    lowerBodyShape.lineTo(-1.72, 0.28);
   } else if (bodyType === 'sedan') {
-    // Silueta Sedán 3 volúmenes (Fiat Cronos / Etios)
-    bodyShape.moveTo(-1.92, 0.3);
-    bodyShape.quadraticCurveTo(-1.98, 0.58, -1.86, 0.84); // Cola del baúl
-    bodyShape.lineTo(-1.35, 0.88); // Tapa de baúl horizontal
-    bodyShape.lineTo(-0.82, 1.32); // Luneta trasera suave
-    bodyShape.quadraticCurveTo(-0.15, 1.38, 0.28, 1.3); // Techo sedán
-    bodyShape.lineTo(0.92, 0.85); // Parabrisas
-    bodyShape.quadraticCurveTo(1.52, 0.78, 1.84, 0.64); // Capot alargado
-    bodyShape.quadraticCurveTo(1.94, 0.46, 1.88, 0.26); // Paragolpe delantero
-    bodyShape.lineTo(-1.92, 0.3);
-
-    cabinGlassShape.moveTo(-1.22, 0.88);
-    cabinGlassShape.lineTo(-0.76, 1.24);
-    cabinGlassShape.quadraticCurveTo(-0.15, 1.29, 0.24, 1.22);
-    cabinGlassShape.lineTo(0.8, 0.86);
-    cabinGlassShape.lineTo(-1.22, 0.88);
+    // Cronos / Etios
+    beltlineY = 0.84;
+    lowerBodyShape.moveTo(-1.92, 0.3);
+    lowerBodyShape.quadraticCurveTo(-1.96, 0.58, -1.86, beltlineY);
+    lowerBodyShape.lineTo(0.84, beltlineY);
+    lowerBodyShape.quadraticCurveTo(1.48, 0.78, 1.84, 0.64);
+    lowerBodyShape.quadraticCurveTo(1.94, 0.46, 1.88, 0.26);
+    lowerBodyShape.lineTo(-1.92, 0.3);
   } else if (bodyType === 'pickup') {
-    // Silueta Pick-up Doble Cabina (Toyota Hilux)
-    bodyShape.moveTo(-2.05, 0.42);
-    bodyShape.lineTo(-2.05, 0.98); // Compuerta de caja trasera
-    bodyShape.lineTo(-0.68, 0.98); // Borde superior de la caja de carga
-    bodyShape.lineTo(-0.68, 1.54); // Luneta vertical doble cabina
-    bodyShape.quadraticCurveTo(-0.05, 1.58, 0.42, 1.52); // Techo alto cabina
-    bodyShape.lineTo(0.98, 1.02); // Parabrisas robusto
-    bodyShape.lineTo(1.88, 0.94); // Capot alto y plano de chata
-    bodyShape.quadraticCurveTo(2.02, 0.88, 2.02, 0.42); // Parrilla frontal alta
-    bodyShape.lineTo(-2.05, 0.42);
-
-    cabinGlassShape.moveTo(-0.58, 1.02);
-    cabinGlassShape.lineTo(-0.58, 1.44);
-    cabinGlassShape.quadraticCurveTo(-0.05, 1.47, 0.36, 1.42);
-    cabinGlassShape.lineTo(0.86, 1.02);
-    cabinGlassShape.lineTo(-0.58, 1.02);
+    // Hilux
+    beltlineY = 0.96;
+    lowerBodyShape.moveTo(-2.05, 0.42);
+    lowerBodyShape.lineTo(-2.05, beltlineY);
+    lowerBodyShape.lineTo(-0.66, beltlineY);
+    lowerBodyShape.lineTo(0.92, beltlineY);
+    lowerBodyShape.lineTo(1.88, 0.92);
+    lowerBodyShape.quadraticCurveTo(2.02, 0.88, 2.02, 0.42);
+    lowerBodyShape.lineTo(-2.05, 0.42);
   } else {
-    // Silueta SUV / Crossover (Chevrolet Tracker / Stepway)
-    bodyShape.moveTo(-1.8, 0.36);
-    bodyShape.quadraticCurveTo(-1.86, 0.68, -1.72, 0.96); // Paragolpe trasero alto
-    bodyShape.lineTo(-1.42, 1.46); // Portón SUV alto
-    bodyShape.quadraticCurveTo(-0.4, 1.52, 0.35, 1.44); // Techo largo SUV
-    bodyShape.lineTo(0.92, 0.96); // Parabrisas
-    bodyShape.quadraticCurveTo(1.52, 0.9, 1.78, 0.78); // Capot musculoso SUV
-    bodyShape.quadraticCurveTo(1.86, 0.56, 1.8, 0.36); // Trompa alta
-    bodyShape.lineTo(-1.8, 0.36);
-
-    cabinGlassShape.moveTo(-1.32, 0.96);
-    cabinGlassShape.lineTo(-1.14, 1.36);
-    cabinGlassShape.quadraticCurveTo(-0.35, 1.41, 0.3, 1.35);
-    cabinGlassShape.lineTo(0.8, 0.96);
-    cabinGlassShape.lineTo(-1.32, 0.96);
+    // SUV (Tracker)
+    beltlineY = 0.94;
+    lowerBodyShape.moveTo(-1.8, 0.36);
+    lowerBodyShape.quadraticCurveTo(-1.86, 0.66, -1.72, beltlineY);
+    lowerBodyShape.lineTo(0.86, beltlineY);
+    lowerBodyShape.quadraticCurveTo(1.48, 0.88, 1.78, 0.76);
+    lowerBodyShape.quadraticCurveTo(1.86, 0.56, 1.8, 0.36);
+    lowerBodyShape.lineTo(-1.8, 0.36);
   }
 
-  // Extrusión de carrocería con biselado suave tipo estudio automotriz
-  const extrudeSettings: THREE.ExtrudeGeometryOptions = {
+  const lowerExtrudeSettings: THREE.ExtrudeGeometryOptions = {
     steps: 1,
-    depth: bodyWidth - 0.24,
+    depth: bodyWidth - 0.22,
     bevelEnabled: true,
-    bevelThickness: 0.12,
-    bevelSize: 0.11,
-    bevelOffset: 0,
-    bevelSegments: 5,
-  };
-
-  const mainBodyGeo = new THREE.ExtrudeGeometry(bodyShape, extrudeSettings);
-  mainBodyGeo.center();
-  const mainBodyMesh = new THREE.Mesh(mainBodyGeo, paintMaterial);
-  const bodyCenterY =
-    bodyType === 'pickup' ? 0.96 : bodyType === 'suv' ? 0.9 : 0.8;
-  mainBodyMesh.position.set(0, bodyCenterY, 0);
-  carGroup.add(mainBodyMesh);
-
-  // Bloque vidriado de cabina (parabrisas, ventanillas y luneta) ligeramente más ancho en ventanillas
-  const glassExtrude: THREE.ExtrudeGeometryOptions = {
-    steps: 1,
-    depth: bodyWidth - 0.18,
-    bevelEnabled: true,
-    bevelThickness: 0.09,
-    bevelSize: 0.06,
+    bevelThickness: 0.11,
+    bevelSize: 0.1,
     bevelSegments: 4,
   };
-  const glassGeo = new THREE.ExtrudeGeometry(cabinGlassShape, glassExtrude);
+  const lowerGeo = new THREE.ExtrudeGeometry(lowerBodyShape, lowerExtrudeSettings);
+  lowerGeo.center();
+  const lowerMesh = new THREE.Mesh(lowerGeo, paintMaterial);
+  lowerMesh.position.set(0, beltlineY / 2 + 0.14, 0);
+  carGroup.add(lowerMesh);
+
+  // =========================================================================
+  // 2. CÁPULA VIDRIADA (Cabina de cristal oscuro)
+  // Existe estrictamente entre la línea de cintura y el techo.
+  // =========================================================================
+  const glassShape = new THREE.Shape();
+  let roofY = 1.32;
+  let glassDepth = bodyWidth - 0.26;
+
+  if (bodyType === 'hatchback') {
+    roofY = 1.32;
+    glassShape.moveTo(-1.42, beltlineY);
+    glassShape.lineTo(-1.18, roofY);
+    glassShape.quadraticCurveTo(-0.35, roofY + 0.05, 0.22, roofY);
+    glassShape.lineTo(0.8, beltlineY);
+    glassShape.lineTo(-1.42, beltlineY);
+  } else if (bodyType === 'sedan') {
+    roofY = 1.3;
+    glassShape.moveTo(-1.28, beltlineY);
+    glassShape.lineTo(-0.76, roofY);
+    glassShape.quadraticCurveTo(-0.15, roofY + 0.05, 0.26, roofY);
+    glassShape.lineTo(0.82, beltlineY);
+    glassShape.lineTo(-1.28, beltlineY);
+  } else if (bodyType === 'pickup') {
+    roofY = 1.5;
+    glassShape.moveTo(-0.64, beltlineY);
+    glassShape.lineTo(-0.64, roofY);
+    glassShape.quadraticCurveTo(-0.05, roofY + 0.04, 0.38, roofY);
+    glassShape.lineTo(0.9, beltlineY);
+    glassShape.lineTo(-0.64, beltlineY);
+  } else {
+    // SUV
+    roofY = 1.42;
+    glassShape.moveTo(-1.46, beltlineY);
+    glassShape.lineTo(-1.18, roofY);
+    glassShape.quadraticCurveTo(-0.35, roofY + 0.05, 0.32, roofY);
+    glassShape.lineTo(0.84, beltlineY);
+    glassShape.lineTo(-1.46, beltlineY);
+  }
+
+  const glassExtrudeSettings: THREE.ExtrudeGeometryOptions = {
+    steps: 1,
+    depth: glassDepth,
+    bevelEnabled: true,
+    bevelThickness: 0.05,
+    bevelSize: 0.04,
+    bevelSegments: 3,
+  };
+  const glassGeo = new THREE.ExtrudeGeometry(glassShape, glassExtrudeSettings);
   glassGeo.center();
   const glassMesh = new THREE.Mesh(glassGeo, glassMaterial);
-  const glassXOffset =
-    bodyType === 'pickup' ? 0.14 : bodyType === 'sedan' ? -0.15 : -0.18;
-  const glassYOffset =
-    bodyType === 'pickup' ? 1.22 : bodyType === 'suv' ? 1.14 : 1.04;
-  glassMesh.position.set(glassXOffset, glassYOffset, 0);
+  glassMesh.position.set(0, (beltlineY + roofY) / 2, 0);
   carGroup.add(glassMesh);
 
-  // Zócalo inferior oscuro (Splitter / Faldones laterales)
+  // =========================================================================
+  // 3. TECHO EN COLOR DE CARROCERÍA (Roof Cap)
+  // Se apoya justo encima del vidrio sin cruzarse con las caras laterales.
+  // =========================================================================
+  let roofLength = 1.45;
+  let roofCenterX = -0.45;
+
+  if (bodyType === 'hatchback') {
+    roofLength = 1.44;
+    roofCenterX = -0.48;
+  } else if (bodyType === 'sedan') {
+    roofLength = 1.05;
+    roofCenterX = -0.25;
+  } else if (bodyType === 'pickup') {
+    roofLength = 1.05;
+    roofCenterX = -0.12;
+  } else {
+    roofLength = 1.52;
+    roofCenterX = -0.42;
+  }
+
+  const roofMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(roofLength, 0.07, bodyWidth - 0.22),
+    paintMaterial
+  );
+  roofMesh.position.set(roofCenterX, roofY + 0.035, 0);
+  carGroup.add(roofMesh);
+
+  // Pilares A (a los costados del parabrisas delantero)
+  [-1, 1].forEach((side) => {
+    const aPillar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.72, 8),
+      paintMaterial
+    );
+    const aX = bodyType === 'pickup' ? 0.64 : 0.52;
+    aPillar.position.set(aX, (beltlineY + roofY) / 2, side * (glassDepth / 2 + 0.02));
+    aPillar.rotation.z = -0.88;
+    carGroup.add(aPillar);
+  });
+
+  // Zócalo inferior oscuro (Splitter / Faldones)
+  const chassisLen =
+    bodyType === 'pickup' ? 3.85 : bodyType === 'sedan' ? 3.62 : 3.28;
   const skirtMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      thechassisLength(bodyType),
-      0.12,
-      bodyWidth * 0.96
-    ),
+    new THREE.BoxGeometry(chassisLen, 0.12, bodyWidth * 0.96),
     trimDarkMaterial
   );
   skirtMesh.position.set(
@@ -305,44 +338,40 @@ function buildCarBodyGroup(
   );
   carGroup.add(skirtMesh);
 
-  // Detalles exclusivos por carrocería (Barra antivuelco en Pick-up / Barras de techo en SUV)
+  // Accesorios distintivos (Caja/Barra antivuelco en Pickup, Barras de techo en SUV)
   if (bodyType === 'pickup') {
-    // Interior oscuro de la caja de carga
     const bedFloor = new THREE.Mesh(
       new THREE.BoxGeometry(1.22, 0.08, bodyWidth * 0.78),
       trimDarkMaterial
     );
-    bedFloor.position.set(-1.35, 0.98, 0);
+    bedFloor.position.set(-1.35, beltlineY, 0);
     carGroup.add(bedFloor);
 
-    // Barra San Antonio / Antivuelco deportiva
     [-1, 1].forEach((side) => {
       const bar = new THREE.Mesh(
         new THREE.CylinderGeometry(0.035, 0.035, 0.55, 12),
         trimDarkMaterial
       );
-      bar.position.set(-0.88, 1.18, side * (bodyWidth * 0.36));
+      bar.position.set(-0.85, beltlineY + 0.26, side * (bodyWidth * 0.36));
       bar.rotation.z = -0.52;
       carGroup.add(bar);
     });
   }
 
   if (bodyType === 'suv') {
-    // Barras longitudinales de techo aluminio en SUV
     [-1, 1].forEach((side) => {
       const rail = new THREE.Mesh(
         new THREE.BoxGeometry(1.35, 0.04, 0.04),
         silverAccentMat
       );
-      rail.position.set(-0.35, 1.48, side * (bodyWidth * 0.34));
+      rail.position.set(-0.38, roofY + 0.09, side * (bodyWidth * 0.34));
       carGroup.add(rail);
     });
   }
 
-  // Espejos retrovisores laterales del color de la carrocería
+  // Espejos retrovisores en color de carrocería
   const mirrorX = bodyType === 'pickup' ? 0.58 : 0.42;
-  const mirrorY =
-    bodyType === 'pickup' ? 1.06 : bodyType === 'suv' ? 0.98 : 0.88;
+  const mirrorY = beltlineY + 0.06;
   [-1, 1].forEach((side) => {
     const mirror = new THREE.Mesh(
       new THREE.BoxGeometry(0.16, 0.1, 0.14),
@@ -352,7 +381,7 @@ function buildCarBodyGroup(
     carGroup.add(mirror);
   });
 
-  // Parrilla frontal + Ópticas LED delanteras
+  // Parrilla frontal + Faros LED delanteros
   const frontX =
     bodyType === 'pickup'
       ? 1.98
@@ -422,20 +451,6 @@ function buildCarBodyGroup(
   return carGroup;
 }
 
-function thechassisLength(bodyType: TipoCarroceria): number {
-  switch (bodyType) {
-    case 'pickup':
-      return 3.85;
-    case 'sedan':
-      return 3.62;
-    case 'suv':
-      return 3.45;
-    case 'hatchback':
-    default:
-      return 3.28;
-  }
-}
-
 export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
   bodyType,
   paintHex,
@@ -447,14 +462,12 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
   const rootGroupRef = useRef<THREE.Group | null>(null);
   const currentBodyTypeRef = useRef<TipoCarroceria>(bodyType);
 
-  // Actualizar color en tiempo real sin recrear la escena WebGL
   useEffect(() => {
     if (paintMaterialRef.current) {
       paintMaterialRef.current.color.set(paintHex);
     }
   }, [paintHex]);
 
-  // Actualizar carrocería 3D cuando el usuario cambia entre Hatchback, Sedán, Pick-up o SUV
   useEffect(() => {
     if (
       rootGroupRef.current &&
@@ -493,7 +506,7 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true, // Fondo 100% transparente sobre el blanco de la tarjeta
+      alpha: true,
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, canvasHeight);
@@ -503,7 +516,6 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // Iluminación de estudio blanco (Apple / Porsche Studio Light Setup)
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.35);
     scene.add(ambientLight);
 
@@ -519,12 +531,11 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
     rimLight.position.set(0, 6, -7);
     scene.add(rimLight);
 
-    // Grupo raíz rotatorio (Auto + Sombra de contacto en el piso)
     const rootGroup = new THREE.Group();
     rootGroupRef.current = rootGroup;
     scene.add(rootGroup);
 
-    // Sombra suave debajo del auto ("fondo blanco/transparente y una sombra abajo eso nomas")
+    // Sombra de contacto suave en el piso blanco
     const shadowTex = createContactShadowTexture();
     if (shadowTex) {
       const shadowGeo = new THREE.PlaneGeometry(4.8, 2.35);
@@ -539,7 +550,6 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
       rootGroup.add(shadowPlane);
     }
 
-    // Material de pintura automotriz tricapa (Clearcoat PBR)
     const paintMaterial = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(paintHex),
       metalness: 0.25,
@@ -553,7 +563,6 @@ export const Car3DWebGLCanvas: React.FC<Car3DWebGLProps> = ({
     carMeshGroup.name = 'carMeshGroup';
     rootGroup.add(carMeshGroup);
 
-    // Ángulo inicial 3/4 delantero estilizado
     let targetRotationY = -0.52;
     let currentRotationY = -0.52;
     let isDragging = false;
