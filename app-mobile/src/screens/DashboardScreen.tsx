@@ -21,37 +21,36 @@ import {
 } from 'lucide-react-native';
 import { LiveTelemetryFrame, ScenarioId } from '../modules/obd2-engine/types';
 import {
-  ComponenteId,
+  ComponenteEvaluado,
   ResumenChequeoMedico,
 } from '../modules/medical-checkup/checkupEngine';
-import { Car3DShowcase } from '../components/Car3DShowcase';
+import { Car3DShowcase, CarPaintOption } from '../components/Car3DShowcase';
 import { DemoControlBar } from '../components/DemoControlBar';
 import { CheckupComponentCard } from '../components/CheckupComponentCard';
 import { Colors } from '../theme/colors';
 
 interface Props {
   chequeo: ResumenChequeoMedico;
+  selectedPaint: CarPaintOption;
   frame: LiveTelemetryFrame;
   activeScenario: ScenarioId;
   onSelectScenario: (scenario: ScenarioId) => void;
   onToggleDongle: () => void;
-  onOpenOnboarding: () => void;
+  onOpenGarageSheet: () => void;
   onOpenCheckupTab: () => void;
-  onQuickUpdateComponent: (
-    id: ComponenteId,
-    preset: 'RECIEN_HECHO' | 'MITAD_VIDA' | 'POR_VENCER' | 'DESCONOCIDO'
-  ) => void;
+  onOpenComponentSheet: (item: ComponenteEvaluado) => void;
 }
 
 export const DashboardScreen: React.FC<Props> = ({
   chequeo,
+  selectedPaint,
   frame,
   activeScenario,
   onSelectScenario,
   onToggleDongle,
-  onOpenOnboarding,
+  onOpenGarageSheet,
   onOpenCheckupTab,
-  onQuickUpdateComponent,
+  onOpenComponentSheet,
 }) => {
   const overallHeroColor: 'GREEN' | 'YELLOW' | 'RED' =
     chequeo.estadoGlobal === 'revisar'
@@ -73,7 +72,7 @@ export const DashboardScreen: React.FC<Props> = ({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Top App Bar Mobile: Título + Botón para cambiar auto / km */}
+      {/* Top App Bar Mobile: Título + Botón para abrir la Burbuja de Garage */}
       <View style={styles.topHeader}>
         <View>
           <Text style={styles.greetingSup}>CONTROL DE SALUD VEHICULAR</Text>
@@ -83,11 +82,11 @@ export const DashboardScreen: React.FC<Props> = ({
         <View style={styles.topActionsRow}>
           <TouchableOpacity
             style={styles.editAutoPill}
-            onPress={onOpenOnboarding}
-            activeOpacity={0.85}
+            onPress={onOpenGarageSheet}
+            activeOpacity={0.8}
           >
             <SlidersHorizontal size={14} color={Colors.brandPrimaryDark} />
-            <Text style={styles.editAutoPillText}>Mi auto / Km</Text>
+            <Text style={styles.editAutoPillText}>Mi auto / Color</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -125,16 +124,18 @@ export const DashboardScreen: React.FC<Props> = ({
         />
       )}
 
-      {/* Hero Section: Vehículo 3D/SVG con Selector de Pintura */}
+      {/* Hero Section: Vehículo 3D/SVG (Al tocar la tuerca o el auto abre la Burbuja Flotante desde abajo) */}
       <Car3DShowcase
         vehicleName={`${chequeo.modelo.marca} ${chequeo.modelo.modelo}`}
         vehicleTrim={`${chequeo.modelo.motor} · ${chequeo.kmActuales.toLocaleString('es-AR')} km`}
         vehicleYear={2021}
         plate="AE 492 KL"
+        selectedPaint={selectedPaint}
         overallStatus={overallHeroColor}
         statusHeadline={chequeo.tituloResumen}
         isDriving={chequeo.dongleConectado && frame.rpm > 400}
         rpm={frame.rpm}
+        onOpenGarageSheet={onOpenGarageSheet}
         onPressStatusBadge={onOpenCheckupTab}
       />
 
@@ -142,7 +143,7 @@ export const DashboardScreen: React.FC<Props> = ({
       <TouchableOpacity
         style={styles.medicalSummaryCard}
         onPress={onOpenCheckupTab}
-        activeOpacity={0.9}
+        activeOpacity={0.88}
       >
         <View style={styles.summaryTopRow}>
           <View style={styles.summaryTitleCol}>
@@ -328,7 +329,7 @@ export const DashboardScreen: React.FC<Props> = ({
               key={item.id}
               item={item}
               kmActuales={chequeo.kmActuales}
-              onQuickUpdateComponent={onQuickUpdateComponent}
+              onOpenComponentSheet={onOpenComponentSheet}
             />
           ))
         ) : (
@@ -390,7 +391,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: '#D6D0F5',
+    borderBottomWidth: 3,
+    borderBottomColor: '#C2B9EC',
   },
   editAutoPillText: {
     color: Colors.brandPrimaryDark,
@@ -437,8 +440,10 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 18,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderWidth: 1.5,
+    borderColor: '#E5E0FA',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
     shadowColor: '#181445',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
@@ -531,8 +536,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
     borderRadius: 18,
     padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderWidth: 1.5,
+    borderColor: '#E5E0FA',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
   },
   vitalTop: {
     flexDirection: 'row',
@@ -581,8 +588,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
     borderRadius: 18,
     padding: 15,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderWidth: 1.5,
+    borderColor: '#E5E0FA',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
   },
   noDongleTextCol: {
     flex: 1,

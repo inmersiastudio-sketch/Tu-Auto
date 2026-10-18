@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import {
   Droplets,
@@ -16,7 +16,7 @@ import {
   Bluetooth,
   Calculator,
   PlusCircle,
-  RotateCcw,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import {
   ComponenteEvaluado,
@@ -28,10 +28,7 @@ import { Colors } from '../theme/colors';
 interface Props {
   item: ComponenteEvaluado;
   kmActuales: number;
-  onQuickUpdateComponent?: (
-    id: ComponenteId,
-    preset: 'RECIEN_HECHO' | 'MITAD_VIDA' | 'POR_VENCER' | 'DESCONOCIDO'
-  ) => void;
+  onOpenComponentSheet?: (item: ComponenteEvaluado) => void;
 }
 
 function renderComponentIcon(id: ComponenteId, color: string) {
@@ -98,9 +95,8 @@ function getEstadoConfig(estado: EstadoComponente) {
 
 export const CheckupComponentCard: React.FC<Props> = ({
   item,
-  onQuickUpdateComponent,
+  onOpenComponentSheet,
 }) => {
-  const [showQuickEdit, setShowQuickEdit] = useState(false);
   const cfg = getEstadoConfig(item.estado);
   const StatusIcon = cfg.StatusIcon;
 
@@ -114,13 +110,20 @@ export const CheckupComponentCard: React.FC<Props> = ({
       ? Math.min(100, Math.max(6, item.vidaConsumidaPct))
       : 0;
 
+  const canConfigure =
+    item.aplicaAlModelo &&
+    item.id !== 'luces_testigos' &&
+    !!onOpenComponentSheet;
+
   return (
-    <View
+    <TouchableOpacity
       style={[
         styles.card,
         isTimingBeltAlert && styles.cardTimingBeltHighlight,
         item.estado === 'revisar' && styles.cardRevisarBorder,
       ]}
+      onPress={() => canConfigure && onOpenComponentSheet?.(item)}
+      activeOpacity={canConfigure ? 0.85 : 1}
     >
       {/* Banda destacada superior si es Correa de Distribución en atención */}
       {isTimingBeltAlert && (
@@ -196,7 +199,7 @@ export const CheckupComponentCard: React.FC<Props> = ({
         </View>
       </View>
 
-      {/* 2. Barra de vida útil consumida (o aviso de cadena / sin datos) */}
+      {/* 2. Barra de vida útil consumida (o botón para abrir burbuja si está sin datos) */}
       {item.aplicaAlModelo && item.id !== 'luces_testigos' && (
         <View style={styles.progressContainer}>
           {item.vidaConsumidaPct !== null ? (
@@ -221,17 +224,12 @@ export const CheckupComponentCard: React.FC<Props> = ({
               </View>
             </>
           ) : (
-            <TouchableOpacity
-              style={styles.missingDataPrompt}
-              onPress={() => setShowQuickEdit(!showQuickEdit)}
-              activeOpacity={0.85}
-            >
+            <View style={styles.missingDataPrompt}>
               <PlusCircle size={15} color={Colors.brandPrimary} />
               <Text style={styles.missingDataPromptText}>
-                Todavía no cargaste cuándo se hizo el último cambio · Tocá para
-                completar
+                Sin datos todavía · Tocá para cargar cuándo se cambió
               </Text>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
@@ -269,85 +267,31 @@ export const CheckupComponentCard: React.FC<Props> = ({
           </View>
         )}
 
-      {/* Botón sutil para actualizar el último cambio del componente */}
-      {item.aplicaAlModelo &&
-        item.id !== 'luces_testigos' &&
-        onQuickUpdateComponent && (
-          <View style={styles.footerActions}>
-            <TouchableOpacity
-              style={styles.updateTriggerBtn}
-              onPress={() => setShowQuickEdit(!showQuickEdit)}
-              activeOpacity={0.8}
-            >
-              <RotateCcw size={12} color={Colors.brandPrimary} />
-              <Text style={styles.updateTriggerText}>
-                {showQuickEdit
-                  ? 'Cerrar opciones'
-                  : item.estado === 'sin_datos'
-                  ? 'Cargar último cambio'
-                  : 'Actualizar fecha / km del último cambio'}
-              </Text>
-            </TouchableOpacity>
-
-            {showQuickEdit && (
-              <View style={styles.quickOptionsGrid}>
-                <TouchableOpacity
-                  style={styles.quickOptionChip}
-                  onPress={() => {
-                    onQuickUpdateComponent(item.id, 'RECIEN_HECHO');
-                    setShowQuickEdit(false);
-                  }}
-                >
-                  <Text style={styles.quickOptionText}>Lo cambié hace poco</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.quickOptionChip}
-                  onPress={() => {
-                    onQuickUpdateComponent(item.id, 'MITAD_VIDA');
-                    setShowQuickEdit(false);
-                  }}
-                >
-                  <Text style={styles.quickOptionText}>Va por la mitad</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.quickOptionChip}
-                  onPress={() => {
-                    onQuickUpdateComponent(item.id, 'POR_VENCER');
-                    setShowQuickEdit(false);
-                  }}
-                >
-                  <Text style={styles.quickOptionText}>Ya está por cumplir</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.quickOptionChip}
-                  onPress={() => {
-                    onQuickUpdateComponent(item.id, 'DESCONOCIDO');
-                    setShowQuickEdit(false);
-                  }}
-                >
-                  <Text style={styles.quickOptionText}>
-                    No sé / Lo compré usado
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-    </View>
+      {/* Pie táctil que abre la Burbuja Flotante sin deformar la tarjeta */}
+      {canConfigure && (
+        <View style={styles.footerRow}>
+          <SlidersHorizontal size={12} color={Colors.brandPrimary} />
+          <Text style={styles.footerActionText}>
+            {item.estado === 'sin_datos'
+              ? 'Cargar último cambio'
+              : 'Actualizar fecha / km del último cambio'}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.bgCard,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 18,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderWidth: 1.5,
+    borderColor: '#E5E0FA',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
     shadowColor: '#181445',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.04,
@@ -355,12 +299,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardTimingBeltHighlight: {
-    borderWidth: 1.5,
     borderColor: Colors.warnAmber,
+    borderBottomColor: '#D97706',
   },
   cardRevisarBorder: {
-    borderWidth: 1.5,
     borderColor: Colors.dangerRedBorder,
+    borderBottomColor: '#EF4444',
   },
   criticalTopRibbon: {
     flexDirection: 'row',
@@ -458,7 +402,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     width: '100%',
-    height: 8,
+    height: 9,
     backgroundColor: Colors.bgElevated,
     borderRadius: 999,
     overflow: 'hidden',
@@ -471,18 +415,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: '#C7D2FE',
   },
   missingDataPromptText: {
     flex: 1,
-    color: Colors.brandPrimary,
+    color: Colors.brandPrimaryDark,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   colloquialExplanation: {
     color: Colors.textSecondary,
@@ -535,40 +479,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 18,
   },
-  footerActions: {
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: Colors.borderSubtle,
   },
-  updateTriggerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-  },
-  updateTriggerText: {
+  footerActionText: {
     color: Colors.brandPrimary,
     fontSize: 12,
-    fontWeight: '700',
-  },
-  quickOptionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 8,
-  },
-  quickOptionChip: {
-    backgroundColor: Colors.bgElevated,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
-  },
-  quickOptionText: {
-    color: Colors.textPrimary,
-    fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

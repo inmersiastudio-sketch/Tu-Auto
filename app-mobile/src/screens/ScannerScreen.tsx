@@ -13,7 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react-native';
 import {
-  ComponenteId,
+  ComponenteEvaluado,
   ResumenChequeoMedico,
 } from '../modules/medical-checkup/checkupEngine';
 import { CheckupComponentCard } from '../components/CheckupComponentCard';
@@ -23,11 +23,8 @@ interface Props {
   chequeo: ResumenChequeoMedico;
   luzTestigoDeclarada: boolean;
   onToggleLuzTestigo: () => void;
-  onOpenOnboarding: () => void;
-  onQuickUpdateComponent: (
-    id: ComponenteId,
-    preset: 'RECIEN_HECHO' | 'MITAD_VIDA' | 'POR_VENCER' | 'DESCONOCIDO'
-  ) => void;
+  onOpenGarageSheet: () => void;
+  onOpenComponentSheet: (item: ComponenteEvaluado) => void;
 }
 
 type FiltroKey = 'TODOS' | 'ATENCION' | 'SIN_DATOS';
@@ -36,8 +33,8 @@ export const ScannerScreen: React.FC<Props> = ({
   chequeo,
   luzTestigoDeclarada,
   onToggleLuzTestigo,
-  onOpenOnboarding,
-  onQuickUpdateComponent,
+  onOpenGarageSheet,
+  onOpenComponentSheet,
 }) => {
   const [filtro, setFiltro] = useState<FiltroKey>('TODOS');
 
@@ -71,8 +68,8 @@ export const ScannerScreen: React.FC<Props> = ({
 
         <TouchableOpacity
           style={styles.vehiclePill}
-          onPress={onOpenOnboarding}
-          activeOpacity={0.85}
+          onPress={onOpenGarageSheet}
+          activeOpacity={0.8}
         >
           <SlidersHorizontal size={13} color={Colors.brandPrimaryDark} />
           <Text style={styles.vehiclePillText}>
@@ -95,7 +92,7 @@ export const ScannerScreen: React.FC<Props> = ({
         )}
       </View>
 
-      {/* Filtros Rápidos */}
+      {/* Filtros Rápidos con Relieve Táctil */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[
@@ -178,7 +175,7 @@ export const ScannerScreen: React.FC<Props> = ({
           key={item.id}
           item={item}
           kmActuales={chequeo.kmActuales}
-          onQuickUpdateComponent={onQuickUpdateComponent}
+          onOpenComponentSheet={onOpenComponentSheet}
         />
       ))}
 
@@ -244,6 +241,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D6D0F5',
+    borderBottomWidth: 3,
+    borderBottomColor: '#C2B9EC',
   },
   vehiclePillText: {
     color: Colors.brandPrimaryDark,
@@ -255,8 +256,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderWidth: 1.5,
+    borderColor: '#E5E0FA',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
   },
   summaryTitle: {
     color: Colors.textPrimary,
@@ -295,11 +298,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: '#E2DDF8',
+    borderBottomWidth: 3,
+    borderBottomColor: '#D0C9F0',
   },
   filterChipActive: {
     backgroundColor: Colors.brandPrimary,
     borderColor: Colors.brandPrimary,
+    borderBottomColor: Colors.brandPrimaryDark,
   },
   filterChipText: {
     color: Colors.textSecondary,
@@ -308,6 +314,7 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   declareLightRow: {
     flexDirection: 'row',

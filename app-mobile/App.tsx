@@ -12,14 +12,17 @@ import { MockOBD2Provider } from './src/modules/obd2-engine/MockOBD2Provider';
 import { LiveTelemetryFrame, ScenarioId } from './src/modules/obd2-engine/types';
 import {
   CATALOGO_MODELOS_ARG,
+  ComponenteEvaluado,
   ComponenteId,
   ejecutarChequeoMedico,
   PerfilVehiculoUsuario,
 } from './src/modules/medical-checkup/checkupEngine';
+import { CAR_PAINTS, CarPaintOption } from './src/components/Car3DShowcase';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
 import { OnboardingModal } from './src/components/OnboardingModal';
+import { ComponentQuickSheet } from './src/components/ComponentQuickSheet';
 import { Colors } from './src/theme/colors';
 
 type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
@@ -27,7 +30,12 @@ type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('RESUMEN');
   const [activeScenario, setActiveScenario] = useState<ScenarioId>('NORMAL');
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showGarageBubble, setShowGarageBubble] = useState(false);
+  const [selectedPaint, setSelectedPaint] = useState<CarPaintOption>(
+    CAR_PAINTS[0]
+  );
+  const [selectedComponentForSheet, setSelectedComponentForSheet] =
+    useState<ComponenteEvaluado | null>(null);
 
   const providerRef = useRef(new MockOBD2Provider());
 
@@ -36,34 +44,28 @@ export default function App() {
     modeloId: 'vw_gol_trend',
     anio: 2021,
     kmActuales: 56000,
-    dongleConectado: false, // Arranca demostrando que el valor principal no depende del hardware
+    dongleConectado: false,
     luzTestigoDeclaradaPorUsuario: false,
     historial: {
-      // Correa original de fábrica a los 56.000 km (intervalo 60.000 km -> 93% consumido -> 'pronto')
       correa_distribucion: {
         ultimoCambioKm: 0,
         mesesDesdeUltimoCambio: 42,
       },
-      // Aceite hecho hace 8.200 km y 9 meses (intervalo 10.000 km -> 82% consumido -> 'pronto')
       aceite_filtro: {
         ultimoCambioKm: 47800,
         mesesDesdeUltimoCambio: 9,
       },
-      // Filtro de aire hecho junto con el último cambio de aceite (55% consumido -> 'bien')
       filtro_aire: {
         ultimoCambioKm: 47800,
         mesesDesdeUltimoCambio: 6,
       },
-      // Batería instalada hace 18 meses (50% consumido -> 'bien')
       bateria: {
         mesesDesdeUltimoCambio: 18,
       },
-      // Refrigerante cambiado hace 12 meses (50% consumido -> 'bien')
       refrigerante: {
         ultimoCambioKm: 40000,
         mesesDesdeUltimoCambio: 12,
       },
-      // Frenos y Neumáticos arrancan 'sin_datos' para no mostrar un 'Bien' falso
     },
   });
 
@@ -196,13 +198,14 @@ export default function App() {
           {activeTab === 'RESUMEN' && (
             <DashboardScreen
               chequeo={chequeo}
+              selectedPaint={selectedPaint}
               frame={frame}
               activeScenario={activeScenario}
               onSelectScenario={handleSelectScenario}
               onToggleDongle={handleToggleDongle}
-              onOpenOnboarding={() => setShowOnboarding(true)}
+              onOpenGarageSheet={() => setShowGarageBubble(true)}
               onOpenCheckupTab={() => setActiveTab('CHEQUEO')}
-              onQuickUpdateComponent={handleQuickUpdateComponent}
+              onOpenComponentSheet={(item) => setSelectedComponentForSheet(item)}
             />
           )}
 
@@ -211,20 +214,29 @@ export default function App() {
               chequeo={chequeo}
               luzTestigoDeclarada={perfil.luzTestigoDeclaradaPorUsuario}
               onToggleLuzTestigo={handleToggleLuzTestigo}
-              onOpenOnboarding={() => setShowOnboarding(true)}
-              onQuickUpdateComponent={handleQuickUpdateComponent}
+              onOpenGarageSheet={() => setShowGarageBubble(true)}
+              onOpenComponentSheet={(item) => setSelectedComponentForSheet(item)}
             />
           )}
 
           {activeTab === 'TALLER' && <WalletScreen chequeo={chequeo} />}
         </View>
 
-        {/* Modal de Carga Inicial / Configuración de 3 Pasos */}
+        {/* Burbuja Cuadrada Flotante 1: Mi Garage (Color del auto + Modelo + Km) */}
         <OnboardingModal
-          visible={showOnboarding}
+          visible={showGarageBubble}
           perfilActual={perfil}
+          selectedPaint={selectedPaint}
+          onSelectPaint={setSelectedPaint}
           onSavePerfil={setPerfil}
-          onClose={() => setShowOnboarding(false)}
+          onClose={() => setShowGarageBubble(false)}
+        />
+
+        {/* Burbuja Cuadrada Flotante 2: Cargar o Actualizar un Componente */}
+        <ComponentQuickSheet
+          item={selectedComponentForSheet}
+          onSelectPreset={handleQuickUpdateComponent}
+          onClose={() => setSelectedComponentForSheet(null)}
         />
 
         {/* Floating Bottom Pill Navigation Bar (3 Pestañas Mobile) */}

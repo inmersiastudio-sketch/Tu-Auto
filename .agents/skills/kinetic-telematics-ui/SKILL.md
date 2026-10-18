@@ -112,7 +112,21 @@ export const KINETIC_TOKENS = {
    * Bloque educativo `¿Por qué pasa esto?` con icono `Lightbulb`.
    * Botón principal redondeado (`#4338CA`) con icono `Store` + `ArrowRight` (`Ver talleres recomendados cerca`) y acción secundaria con icono `Clock`/`Alarm` (`Recordármelo el fin de semana`).
 
-3. **Pantalla 3: `Gastos` (`WalletScreen.tsx`)**
-   * **Hero Smart Savings Card (`rounded-3xl`):** Píldora superior con icono `PiggyBank` (`Ahorro Sugerido • Plan semestral`), título `Para no tener sorpresas este semestre, separá $35.000 / mes`, barra de progreso celeste (`#4CD7F6`) con meta semestral y botones `Simular aporte` (con icono `PlusCircle`) y `Ver detalle`.
-   * **Calendario Inteligente:** Tarjetas limpias para `Cambio de aceite y filtros` (icono `Droplets`), `Líquido refrigerante y purga` (icono `Thermometer`) y `Rotación y alineación` (icono `Sliders`).
-   * **Caja Comparativa `Efecto prevención`:** Compara `MANTENIMIENTO HOY ($138.000)` vs `ROTURA MAYOR ($890.000+)` con nota de respaldo e icono `ThumbsUp`.
+3. **Pantalla 3: `Guía Taller` (`WalletScreen.tsx`)**
+   * Resumen para el mecánico, lista de ítems a programar con magnitud relativa, escudo de componentes que todavía tienen vida útil y proporción `1x` vs `8x a 12x`.
+
+---
+
+## 6. Patrones Modernos de UX Mobile (iOS Floating Sheet + Duolingo + Mercado Pago)
+
+1. **PROHIBIDO Agrandar Tarjetas Inline (`Zero Layout Shift`):**
+   * Al tocar la tuerca de configuración del auto (`Settings`), el selector de modelo o el botón para registrar el cambio de un componente, **JAMÁS** se debe expandir un `div` dentro de la misma tarjeta deformando la pantalla.
+2. **Burbujas Cuadradas Flotantes desde Abajo (`iOS Floating Bottom Sheet`):**
+   * Toda configuración rápida (cambiar color de pintura del auto, cambiar modelo/km o registrar el último service de un componente) debe emerger desde abajo como una **burbuja cuadrada redondeada flotante** (`borderRadius: 32`, separada de los bordes con `marginHorizontal: 12`, `marginBottom: 14`).
+   * **Fondo Oscurecido (`Backdrop Scrim`):** El fondo detrás de la burbuja debe oscurecerse suavemente (`rgba(15, 11, 46, 0.58)`) con cierre instantáneo al tocar afuera.
+   * **Píldora Superior (`Drag Handle`):** Indicador horizontal centrado (`width: 42, height: 5, borderRadius: 999`) en la parte superior de la burbuja.
+3. **Vista Previa en Vivo dentro de la Burbuja (`Interactive Garage Preview`):**
+   * Cuando el usuario abre la tuerca del auto, la burbuja flotante muestra un mini-escenario con el auto 3D/SVG en vivo que cambia de pintura y de modelo instantáneamente al tocar cada color o marca.
+4. **Botones y Tarjetas Táctiles (`Duolingo & Mercado Pago Tactile Feel`):**
+   * Las opciones de selección usan tarjetas redondeadas con relieve táctil (`borderBottomWidth: 3` o `4`), iconos claros, micro-feedback inmediato y un único botón primario contundente al pie de la burbuja.
+

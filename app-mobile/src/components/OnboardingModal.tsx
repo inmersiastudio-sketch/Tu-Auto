@@ -1,30 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Animated,
+  Pressable,
 } from 'react-native';
 import {
   Car,
   Gauge,
   Wrench,
+  Check,
   CheckCircle2,
   X,
   Bluetooth,
   Smartphone,
   AlertTriangle,
+  Palette,
 } from 'lucide-react-native';
 import {
   CATALOGO_MODELOS_ARG,
   PerfilVehiculoUsuario,
 } from '../modules/medical-checkup/checkupEngine';
+import {
+  CAR_PAINTS,
+  CarPaintOption,
+  CarVectorIllustration,
+} from './Car3DShowcase';
 import { Colors } from '../theme/colors';
 
 interface Props {
   visible: boolean;
   perfilActual: PerfilVehiculoUsuario;
+  selectedPaint: CarPaintOption;
+  onSelectPaint: (paint: CarPaintOption) => void;
   onSavePerfil: (nuevoPerfil: PerfilVehiculoUsuario) => void;
   onClose: () => void;
 }
@@ -34,9 +45,14 @@ const KM_PRESETS = [25000, 42500, 56000, 68000, 95000];
 export const OnboardingModal: React.FC<Props> = ({
   visible,
   perfilActual,
+  selectedPaint,
+  onSelectPaint,
   onSavePerfil,
   onClose,
 }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'ESTILO_MODELO' | 'KM_SERVICE'>(
+    'ESTILO_MODELO'
+  );
   const [modeloId, setModeloId] = useState(perfilActual.modeloId);
   const [kmActuales, setKmActuales] = useState(perfilActual.kmActuales);
   const [dongleConectado, setDongleConectado] = useState(
@@ -49,6 +65,33 @@ export const OnboardingModal: React.FC<Props> = ({
     'DE_FABRICA' | 'CAMBIADA_HACE_POCO' | 'NO_TENGO_IDEA'
   >('DE_FABRICA');
 
+  const slideAnim = useRef(new Animated.Value(420)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setModeloId(perfilActual.modeloId);
+      setKmActuales(perfilActual.kmActuales);
+      setDongleConectado(perfilActual.dongleConectado);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 19,
+          stiffness: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      slideAnim.setValue(420);
+      fadeAnim.setValue(0);
+    }
+  }, [visible, perfilActual, fadeAnim, slideAnim]);
+
   if (!visible) return null;
 
   const modeloSeleccionado =
@@ -56,7 +99,6 @@ export const OnboardingModal: React.FC<Props> = ({
     CATALOGO_MODELOS_ARG[0];
 
   const handleConfirm = () => {
-    // Construir historial inicial a partir de las 3 preguntas simples
     const historial: PerfilVehiculoUsuario['historial'] = {
       ...perfilActual.historial,
     };
@@ -111,451 +153,744 @@ export const OnboardingModal: React.FC<Props> = ({
   };
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.sheet}>
+    <View style={styles.rootPortal}>
+      {/* Fondo Oscurecido (Backdrop Scrim) — Tocar afuera cierra la burbuja */}
+      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
+        <Pressable style={styles.backdropPressable} onPress={onClose} />
+      </Animated.View>
+
+      {/* Burbuja Cuadrada Flotante estilo iOS / Duolingo / Mercado Pago */}
+      <Animated.View
+        style={[
+          styles.floatingBubble,
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        {/* Drag Handle Pill superior */}
+        <View style={styles.dragHandleWrap}>
+          <View style={styles.dragHandlePill} />
+        </View>
+
+        {/* Encabezado de la Burbuja */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.supTitle}>CONFIGURACIÓN EN 3 PASOS</Text>
-            <Text style={styles.title}>Cargá tu auto sin complicarte</Text>
+            <Text style={styles.supTitle}>MI GARAGE INTERACTIVO</Text>
+            <Text style={styles.title}>Personalizá tu auto</Text>
           </View>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity
+            style={styles.closeCircleBtn}
+            onPress={onClose}
+            activeOpacity={0.75}
+          >
             <X size={18} color={Colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollBody}
-        >
-          {/* PASO 1: Elegir Modelo */}
-          <View style={styles.stepBox}>
-            <View style={styles.stepHeader}>
-              <Car size={16} color={Colors.brandPrimary} />
-              <Text style={styles.stepTitle}>
-                1. ¿Qué auto manejás? (Ajusta el manual oficial)
+        {/* Escenario 3D/SVG en Vivo dentro de la Burbuja + Selector de Colores */}
+        <View style={styles.livePreviewStage}>
+          <View style={styles.stageTopBadges}>
+            <View style={styles.stageModelPill}>
+              <Text style={styles.stageModelText}>
+                {modeloSeleccionado.marca} {modeloSeleccionado.modelo}
               </Text>
             </View>
+            <View style={styles.stageEnginePill}>
+              <Text style={styles.stageEngineText}>
+                {modeloSeleccionado.usaCadenaDistribucion
+                  ? 'Motor a Cadena'
+                  : `Correa c/${((modeloSeleccionado.intervalos.correaKm ?? 60000) / 1000).toFixed(0)}k km`}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.carSvgWrap}>
+            <CarVectorIllustration paint={selectedPaint} height={106} />
+          </View>
+
+          {/* Barra de Selección de Pintura en Vivo */}
+          <View style={styles.paintBar}>
+            <View style={styles.paintLabelRow}>
+              <Palette size={12} color="#E0E0FF" />
+              <Text style={styles.paintLabelText}>
+                Color: <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>{selectedPaint.name}</Text>
+              </Text>
+            </View>
+            <View style={styles.swatchesRow}>
+              {CAR_PAINTS.map((p) => {
+                const active = p.id === selectedPaint.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[
+                      styles.colorCircleBtn,
+                      { backgroundColor: p.swatch },
+                      active && styles.colorCircleBtnActive,
+                    ]}
+                    onPress={() => onSelectPaint(p)}
+                    activeOpacity={0.8}
+                  >
+                    {active && (
+                      <Check
+                        size={14}
+                        color={p.id === 'crystal-white' ? '#1E1B4B' : '#FFFFFF'}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        {/* Segmented Control (Estilo iOS / Mercado Pago) para no saturar */}
+        <View style={styles.segmentedTrack}>
+          <TouchableOpacity
+            style={[
+              styles.segmentedTab,
+              activeSubTab === 'ESTILO_MODELO' && styles.segmentedTabActive,
+            ]}
+            onPress={() => setActiveSubTab('ESTILO_MODELO')}
+            activeOpacity={0.85}
+          >
+            <Car
+              size={14}
+              color={
+                activeSubTab === 'ESTILO_MODELO'
+                  ? Colors.brandPrimaryDark
+                  : Colors.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.segmentedText,
+                activeSubTab === 'ESTILO_MODELO' && styles.segmentedTextActive,
+              ]}
+            >
+              1. Modelo del auto
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.segmentedTab,
+              activeSubTab === 'KM_SERVICE' && styles.segmentedTabActive,
+            ]}
+            onPress={() => setActiveSubTab('KM_SERVICE')}
+            activeOpacity={0.85}
+          >
+            <Gauge
+              size={14}
+              color={
+                activeSubTab === 'KM_SERVICE'
+                  ? Colors.brandPrimaryDark
+                  : Colors.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.segmentedText,
+                activeSubTab === 'KM_SERVICE' && styles.segmentedTextActive,
+              ]}
+            >
+              2. Km y Service ({(kmActuales / 1000).toFixed(1)}k)
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Cuerpo Deslizable de la Burbuja */}
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {activeSubTab === 'ESTILO_MODELO' ? (
             <View style={styles.modelsGrid}>
               {CATALOGO_MODELOS_ARG.map((m) => {
                 const active = m.id === modeloId;
                 return (
                   <TouchableOpacity
                     key={m.id}
-                    style={[styles.modelChip, active && styles.modelChipActive]}
-                    onPress={() => setModeloId(m.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.modelChipBrand,
-                        active && { color: 'rgba(255,255,255,0.8)' },
-                      ]}
-                    >
-                      {m.marca}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.modelChipName,
-                        active && { color: '#FFFFFF' },
-                      ]}
-                    >
-                      {m.modelo}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.modelChipEngine,
-                        active && { color: '#E0E0FF' },
-                      ]}
-                    >
-                      {m.usaCadenaDistribucion ? 'Motor a Cadena' : 'Usa Correa'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* PASO 2: Kilómetros Actuales */}
-          <View style={styles.stepBox}>
-            <View style={styles.stepHeader}>
-              <Gauge size={16} color={Colors.brandPrimary} />
-              <Text style={styles.stepTitle}>
-                2. ¿Cuántos kilómetros marca hoy el tablero?
-              </Text>
-            </View>
-            <View style={styles.kmRow}>
-              {KM_PRESETS.map((val) => {
-                const active = kmActuales === val;
-                return (
-                  <TouchableOpacity
-                    key={val}
-                    style={[styles.kmChip, active && styles.kmChipActive]}
-                    onPress={() => setKmActuales(val)}
-                  >
-                    <Text
-                      style={[
-                        styles.kmChipText,
-                        active && styles.kmChipTextActive,
-                      ]}
-                    >
-                      {(val / 1000).toFixed(val === 42500 ? 1 : 0)}k km
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* PASO 3: Último Service de Aceite */}
-          <View style={styles.stepBox}>
-            <View style={styles.stepHeader}>
-              <Wrench size={16} color={Colors.brandPrimary} />
-              <Text style={styles.stepTitle}>
-                3. ¿Cuándo le hiciste el último cambio de aceite?
-              </Text>
-            </View>
-            <View style={styles.optionsList}>
-              {[
-                { id: 'RECIEN', label: 'Hace poco (menos de 4 meses)' },
-                { id: 'OCHO_MESES', label: 'Hace unos 8 o 9 meses (~8.200 km)' },
-                { id: 'MAS_DE_ANIO', label: 'Hace más de 1 año (ya me pasé)' },
-                {
-                  id: 'USADO_SIN_DATO',
-                  label: 'No me acuerdo / Lo compré usado hace poco',
-                },
-              ].map((opt) => {
-                const active = aceitePreset === opt.id;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
                     style={[
-                      styles.optionRowBtn,
-                      active && styles.optionRowBtnActive,
+                      styles.tactileModelCard,
+                      active && styles.tactileModelCardActive,
                     ]}
-                    onPress={() => setAceitePreset(opt.id as any)}
+                    onPress={() => setModeloId(m.id)}
+                    activeOpacity={0.8}
                   >
-                    <CheckCircle2
-                      size={16}
-                      color={active ? Colors.brandPrimary : Colors.textMuted}
-                    />
-                    <Text
-                      style={[
-                        styles.optionRowText,
-                        active && styles.optionRowTextActive,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Pregunta especial de Correa si el modelo NO lleva cadena */}
-          {!modeloSeleccionado.usaCadenaDistribucion && (
-            <View style={styles.timingBeltQuestionBox}>
-              <View style={styles.stepHeader}>
-                <AlertTriangle size={16} color={Colors.warnAmberDark} />
-                <Text style={styles.timingBeltQuestionTitle}>
-                  Tu {modeloSeleccionado.modelo} usa correa de distribución: ¿se
-                  cambió alguna vez?
-                </Text>
-              </View>
-              <View style={styles.kmRow}>
-                {[
-                  { id: 'DE_FABRICA', label: 'Nunca (original)' },
-                  { id: 'CAMBIADA_HACE_POCO', label: 'Sí, se cambió' },
-                  { id: 'NO_TENGO_IDEA', label: 'No tengo idea' },
-                ].map((opt) => {
-                  const active = correaPreset === opt.id;
-                  return (
-                    <TouchableOpacity
-                      key={opt.id}
-                      style={[styles.kmChip, active && styles.kmChipActive]}
-                      onPress={() => setCorreaPreset(opt.id as any)}
-                    >
+                    <View style={styles.modelCardTop}>
                       <Text
                         style={[
-                          styles.kmChipText,
-                          active && styles.kmChipTextActive,
+                          styles.modelBrandText,
+                          active && { color: Colors.brandPrimary },
                         ]}
                       >
-                        {opt.label}
+                        {m.marca}
                       </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {active && (
+                        <CheckCircle2 size={15} color={Colors.brandPrimary} />
+                      )}
+                    </View>
+                    <Text style={styles.modelNameText}>{m.modelo}</Text>
+                    <Text style={styles.modelEngineSub}>
+                      {m.motor} ·{' '}
+                      {m.usaCadenaDistribucion ? 'Usa Cadena' : 'Usa Correa'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.kmServiceContainer}>
+              {/* Selección de Kilómetros Actuales */}
+              <View style={styles.blockCard}>
+                <Text style={styles.blockTitle}>
+                  ¿Cuántos kilómetros tiene hoy?
+                </Text>
+                <View style={styles.chipsWrap}>
+                  {KM_PRESETS.map((val) => {
+                    const active = kmActuales === val;
+                    return (
+                      <TouchableOpacity
+                        key={val}
+                        style={[
+                          styles.tactileChip,
+                          active && styles.tactileChipActive,
+                        ]}
+                        onPress={() => setKmActuales(val)}
+                      >
+                        <Text
+                          style={[
+                            styles.tactileChipText,
+                            active && styles.tactileChipTextActive,
+                          ]}
+                        >
+                          {(val / 1000).toFixed(val === 42500 ? 1 : 0)} mil km
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Último Service de Aceite */}
+              <View style={styles.blockCard}>
+                <View style={styles.blockTitleRow}>
+                  <Wrench size={14} color={Colors.brandPrimary} />
+                  <Text style={styles.blockTitle}>
+                    ¿Cuándo hiciste el último cambio de aceite?
+                  </Text>
+                </View>
+                <View style={styles.optionsCol}>
+                  {[
+                    { id: 'RECIEN', label: 'Hace poco (menos de 4 meses)' },
+                    { id: 'OCHO_MESES', label: 'Hace ~8 meses (ya se acerca)' },
+                    { id: 'MAS_DE_ANIO', label: 'Hace más de 1 año (vencido)' },
+                    {
+                      id: 'USADO_SIN_DATO',
+                      label: 'No me acuerdo / Lo compré usado',
+                    },
+                  ].map((opt) => {
+                    const active = aceitePreset === opt.id;
+                    return (
+                      <TouchableOpacity
+                        key={opt.id}
+                        style={[
+                          styles.tactileOptionBtn,
+                          active && styles.tactileOptionBtnActive,
+                        ]}
+                        onPress={() => setAceitePreset(opt.id as any)}
+                      >
+                        <CheckCircle2
+                          size={16}
+                          color={
+                            active ? Colors.brandPrimary : Colors.textMuted
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.tactileOptionText,
+                            active && styles.tactileOptionTextActive,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Pregunta de Correa si aplica al modelo */}
+              {!modeloSeleccionado.usaCadenaDistribucion && (
+                <View style={styles.beltAlertBlock}>
+                  <View style={styles.blockTitleRow}>
+                    <AlertTriangle size={14} color={Colors.warnAmberDark} />
+                    <Text style={styles.beltAlertTitle}>
+                      ¿Se cambió la correa de distribución alguna vez?
+                    </Text>
+                  </View>
+                  <View style={styles.chipsWrap}>
+                    {[
+                      { id: 'DE_FABRICA', label: 'Todavía original' },
+                      { id: 'CAMBIADA_HACE_POCO', label: 'Sí, se cambió' },
+                      { id: 'NO_TENGO_IDEA', label: 'No tengo idea' },
+                    ].map((opt) => {
+                      const active = correaPreset === opt.id;
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          style={[
+                            styles.tactileChip,
+                            active && styles.tactileChipActive,
+                          ]}
+                          onPress={() => setCorreaPreset(opt.id as any)}
+                        >
+                          <Text
+                            style={[
+                              styles.tactileChipText,
+                              active && styles.tactileChipTextActive,
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Selector de Modo: Sin Dongle vs Con Dongle */}
+              <View style={styles.modeDualRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.modeMiniCard,
+                    !dongleConectado && styles.modeMiniCardActive,
+                  ]}
+                  onPress={() => setDongleConectado(false)}
+                >
+                  <Smartphone
+                    size={16}
+                    color={
+                      !dongleConectado
+                        ? Colors.brandPrimary
+                        : Colors.textSecondary
+                    }
+                  />
+                  <Text style={styles.modeMiniTitle}>Sin Dongle</Text>
+                  <Text style={styles.modeMiniSub}>Por km y manual</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modeMiniCard,
+                    dongleConectado && styles.modeMiniCardActive,
+                  ]}
+                  onPress={() => setDongleConectado(true)}
+                >
+                  <Bluetooth
+                    size={16}
+                    color={
+                      dongleConectado
+                        ? Colors.brandPrimary
+                        : Colors.textSecondary
+                    }
+                  />
+                  <Text style={styles.modeMiniTitle}>Con Dongle OBD2</Text>
+                  <Text style={styles.modeMiniSub}>Mide agua y batería</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
-
-          {/* Selector de Modo: Sin Dongle vs Con Dongle OBD2 */}
-          <View style={styles.stepBox}>
-            <Text style={styles.stepTitle}>
-              ¿Cómo querés usar la app ahora?
-            </Text>
-            <View style={styles.modeSelectorRow}>
-              <TouchableOpacity
-                style={[
-                  styles.modeCard,
-                  !dongleConectado && styles.modeCardActive,
-                ]}
-                onPress={() => setDongleConectado(false)}
-              >
-                <Smartphone
-                  size={18}
-                  color={
-                    !dongleConectado ? Colors.brandPrimary : Colors.textSecondary
-                  }
-                />
-                <Text style={styles.modeCardTitle}>Sin Dongle (Solo App)</Text>
-                <Text style={styles.modeCardSub}>
-                  Calcula todo por km, fecha y manual de tu auto
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.modeCard,
-                  dongleConectado && styles.modeCardActive,
-                ]}
-                onPress={() => setDongleConectado(true)}
-              >
-                <Bluetooth
-                  size={18}
-                  color={
-                    dongleConectado ? Colors.brandPrimary : Colors.textSecondary
-                  }
-                />
-                <Text style={styles.modeCardTitle}>Con Dongle OBD2</Text>
-                <Text style={styles.modeCardSub}>
-                  Suma temperatura de agua, batería y luces en vivo
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </ScrollView>
 
+        {/* Botón Táctil 3D Estilo Duolingo / Mercado Pago */}
         <TouchableOpacity
-          style={styles.savePrimaryBtn}
+          style={styles.duolingoPrimaryBtn}
           onPress={handleConfirm}
-          activeOpacity={0.88}
+          activeOpacity={0.85}
         >
-          <Text style={styles.savePrimaryBtnText}>
-            Ver el chequeo médico de mi auto
+          <Text style={styles.duolingoPrimaryBtnText}>
+            Listo, guardar mi auto
           </Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  rootPortal: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(24, 20, 69, 0.55)',
     justifyContent: 'flex-end',
-    zIndex: 50,
+    zIndex: 100,
   },
-  sheet: {
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(14, 11, 41, 0.62)',
+  },
+  backdropPressable: {
+    flex: 1,
+  },
+  floatingBubble: {
     backgroundColor: Colors.bgPrimary,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-    maxHeight: '92%',
+    marginHorizontal: 12,
+    marginBottom: 14,
+    borderRadius: 32,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+    paddingTop: 10,
+    maxHeight: '88%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+    borderBottomWidth: 5,
+    borderBottomColor: '#D6D1F5',
+    shadowColor: '#0F0A3C',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.32,
+    shadowRadius: 32,
+    elevation: 16,
+  },
+  dragHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  dragHandlePill: {
+    width: 42,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#CFCBE6',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginTop: 4,
+    marginBottom: 12,
   },
   supTitle: {
     color: Colors.brandPrimary,
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 0.9,
   },
   title: {
     color: Colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.4,
   },
-  closeBtn: {
+  closeCircleBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bgHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scrollBody: {
-    paddingBottom: 14,
-  },
-  stepBox: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: 18,
+  livePreviewStage: {
+    backgroundColor: Colors.heroIndigoMid,
+    borderRadius: 22,
     padding: 14,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderBottomWidth: 4,
+    borderBottomColor: '#2E239E',
   },
-  stepHeader: {
+  stageTopBadges: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  stageModelPill: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  stageModelText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  stageEnginePill: {
+    backgroundColor: 'rgba(15, 10, 60, 0.45)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  stageEngineText: {
+    color: '#E0E0FF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  carSvgWrap: {
+    marginVertical: 2,
+    alignItems: 'center',
+  },
+  paintBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+  },
+  paintLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 5,
   },
-  stepTitle: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
+  paintLabelText: {
+    color: '#E0E0FF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  swatchesRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  colorCircleBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  colorCircleBtnActive: {
+    borderColor: '#FFFFFF',
+    borderWidth: 2.5,
+    transform: [{ scale: 1.12 }],
+  },
+  segmentedTrack: {
+    flexDirection: 'row',
+    backgroundColor: Colors.bgHigh,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 12,
+  },
+  segmentedTab: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 11,
+  },
+  segmentedTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#181445',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  segmentedText: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  segmentedTextActive: {
+    color: Colors.brandPrimaryDark,
+    fontWeight: '800',
+  },
+  scrollArea: {
+    maxHeight: 230,
+  },
+  scrollContent: {
+    paddingBottom: 8,
   },
   modelsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  modelChip: {
+  tactileModelCard: {
     width: '48%',
-    backgroundColor: Colors.bgElevated,
-    borderRadius: 12,
-    padding: 10,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 11,
+    borderWidth: 1.5,
+    borderColor: '#E2DDF8',
+    borderBottomWidth: 4,
+    borderBottomColor: '#D0C9F0',
+  },
+  tactileModelCardActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: Colors.brandPrimary,
+    borderBottomColor: Colors.brandPrimaryDark,
+  },
+  modelCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modelBrandText: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  modelNameText: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  modelEngineSub: {
+    color: Colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  kmServiceContainer: {
+    gap: 10,
+  },
+  blockCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
   },
-  modelChipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
+  blockTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
-  modelChipBrand: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  modelChipName: {
+  blockTitle: {
     color: Colors.textPrimary,
     fontSize: 12,
     fontWeight: '800',
-    marginTop: 1,
+    marginBottom: 6,
   },
-  modelChipEngine: {
-    color: Colors.brandPrimary,
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 3,
-  },
-  kmRow: {
+  chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
+    gap: 6,
   },
-  kmChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: Colors.bgElevated,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
-  },
-  kmChipActive: {
-    backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-  },
-  kmChipText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  kmChipTextActive: {
-    color: '#FFFFFF',
-  },
-  optionsList: {
-    gap: 7,
-  },
-  optionRowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    padding: 11,
+  tactileChip: {
+    paddingHorizontal: 11,
+    paddingVertical: 7,
     borderRadius: 12,
     backgroundColor: Colors.bgElevated,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: '#DCD6F7',
+    borderBottomWidth: 3,
+    borderBottomColor: '#C7C0EB',
   },
-  optionRowBtnActive: {
+  tactileChipActive: {
+    backgroundColor: Colors.brandPrimary,
+    borderColor: Colors.brandPrimary,
+    borderBottomColor: Colors.brandPrimaryDark,
+  },
+  tactileChipText: {
+    color: Colors.textPrimary,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  tactileChipTextActive: {
+    color: '#FFFFFF',
+  },
+  optionsCol: {
+    gap: 6,
+  },
+  tactileOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: Colors.bgElevated,
+    borderWidth: 1,
+    borderColor: '#E2DDF8',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CFC8EE',
+  },
+  tactileOptionBtnActive: {
     backgroundColor: '#EEF2FF',
     borderColor: Colors.brandPrimary,
+    borderBottomColor: Colors.brandPrimaryDark,
   },
-  optionRowText: {
+  tactileOptionText: {
     color: Colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
-  optionRowTextActive: {
+  tactileOptionTextActive: {
     color: Colors.textPrimary,
     fontWeight: '800',
   },
-  timingBeltQuestionBox: {
+  beltAlertBlock: {
     backgroundColor: Colors.warnAmberBg,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: Colors.warnAmberBorder,
   },
-  timingBeltQuestionTitle: {
+  beltAlertTitle: {
     color: Colors.warnAmberText,
     fontSize: 12,
     fontWeight: '800',
     flex: 1,
   },
-  modeSelectorRow: {
+  modeDualRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
+    gap: 8,
   },
-  modeCard: {
+  modeMiniCard: {
     flex: 1,
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bgCard,
     borderRadius: 14,
-    padding: 12,
+    padding: 11,
     borderWidth: 1.5,
-    borderColor: Colors.borderSubtle,
+    borderColor: '#E2DDF8',
+    borderBottomWidth: 3,
+    borderBottomColor: '#CFC8EE',
   },
-  modeCardActive: {
+  modeMiniCardActive: {
     backgroundColor: '#EEF2FF',
     borderColor: Colors.brandPrimary,
+    borderBottomColor: Colors.brandPrimaryDark,
   },
-  modeCardTitle: {
+  modeMiniTitle: {
     color: Colors.textPrimary,
     fontSize: 12,
     fontWeight: '800',
-    marginTop: 6,
+    marginTop: 4,
   },
-  modeCardSub: {
+  modeMiniSub: {
     color: Colors.textSecondary,
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 3,
+    fontSize: 10,
+    marginTop: 1,
   },
-  savePrimaryBtn: {
+  duolingoPrimaryBtn: {
     backgroundColor: Colors.brandPrimary,
-    paddingVertical: 15,
-    borderRadius: 999,
+    paddingVertical: 14,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 10,
+    borderBottomWidth: 4,
+    borderBottomColor: Colors.brandPrimaryDark,
   },
-  savePrimaryBtnText: {
+  duolingoPrimaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });
