@@ -7,7 +7,7 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
-import { Car, ClipboardCheck, MessageSquareQuote } from 'lucide-react-native';
+import { Car, ClipboardCheck, MessageSquareQuote, Activity } from 'lucide-react-native';
 import { MockOBD2Provider } from './src/modules/obd2-engine/MockOBD2Provider';
 import { LiveTelemetryFrame, ScenarioId } from './src/modules/obd2-engine/types';
 import {
@@ -21,12 +21,13 @@ import { CAR_PAINTS, CarPaintOption } from './src/components/Car3DShowcase';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
+import { TelemetryTripScreen } from './src/screens/TelemetryTripScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { OnboardingModal } from './src/components/OnboardingModal';
 import { ComponentQuickSheet } from './src/components/ComponentQuickSheet';
 import { Colors, FontFamily } from './src/theme/colors';
 
-type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
+type TabKey = 'RESUMEN' | 'CHEQUEO' | 'VIAJES' | 'TALLER';
 
 export default function App() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
@@ -257,6 +258,8 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'VIAJES' && <TelemetryTripScreen />}
+
           {activeTab === 'TALLER' && <WalletScreen chequeo={chequeo} />}
         </View>
 
@@ -335,6 +338,30 @@ export default function App() {
                 ]}
               >
                 Chequeo
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                activeTab === 'VIAJES' && styles.tabButtonActive,
+              ]}
+              onPress={() => setActiveTab('VIAJES')}
+              activeOpacity={0.85}
+            >
+              <Activity
+                size={19}
+                color={
+                  activeTab === 'VIAJES' ? '#FFFFFF' : Colors.textSecondary
+                }
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === 'VIAJES' && styles.tabLabelActive,
+                ]}
+              >
+                Viajes
               </Text>
             </TouchableOpacity>
 

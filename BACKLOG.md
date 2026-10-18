@@ -7,9 +7,9 @@
 
 ## 📈 Resumen de Progreso Actual
 
-* **Sprint Activo:** `PROYECTO COMPLETO — Sprints 0, 1, 2, 3 y 4 Finalizados al 100%`
-* **Tareas Completadas:** `28 / 28` (`100%` de todas las Épicas completadas y verificadas con `16/16` tests unitarios e integración ✅)
-* **Rediseño UI Oficial:** Implementado sistema de diseño **Kinetic Telematics** (Google Stitch), Daylight-First (`#FCF8FF`) + Hero Indigo (`#4338CA`), modelo SVG del vehículo con selector dinámico de pintura, iconos vectoriales `lucide-react-native` y **CERO EMOJIS** en toda la aplicación.
+* **Sprint Activo:** `SPRINT 5 — Telemetría Avanzada, Modo 02 Freeze Frames & Caja Negra (COMPLETADO 100%)`
+* **Tareas Completadas:** `30 / 30` (`100%` de todas las Épicas completadas y verificadas con `22/22` tests unitarios e integración ✅)
+* **Rediseño UI Oficial:** Implementado sistema de diseño **Kinetic Telematics** (Google Stitch), Daylight-First (`#F8FAFC`) + Sapphire Blue (`#2563EB`), modelo 3D interactivo Three.js, iconos vectoriales `lucide-react-native` y **CERO EMOJIS** en toda la aplicación.
 * **Estado del Sistema:** Servidor Expo Web activo en `http://localhost:8081` con simulador interactivo para demostraciones en vivo. Listo para builds nativas y despliegue.
 
 ---
@@ -76,3 +76,15 @@
 | **TUA-026** | `[x]` Done | Alta | `fleet-b2b` | Configurar alertas al dueño de la flota por recalentamiento, exceso de RPM o desconexión del dispositivo OBD2 | [`fleetAlertEngine.ts`](./app-mobile/src/modules/fleet-b2b/fleetAlertEngine.ts) |
 | **TUA-027** | `[x]` Done | Media | `firmware-esp32` | Escribir el código fuente C++ / Arduino (`firmware-esp32/tu_auto_dongle_v1/tu_auto_dongle_v1.ino`) para nuestro hardware propio con `ESP32-C3` + `SN65HVD230` | [`tu_auto_dongle_v1.ino`](./firmware-esp32/tu_auto_dongle_v1/tu_auto_dongle_v1.ino) |
 | **TUA-028** | `[x]` Done | Media | QA & Lanzamiento | Configurar script de compilación Expo EAS (`eas.json`) para generar instalador `.apk` de Android | [`app-mobile/eas.json`](./app-mobile/eas.json) |
+
+---
+
+## ✅ SPRINT 5: Telemetría Avanzada, Modo 02 Freeze Frames & Caja Negra (COMPLETADO 100%)
+
+*Objetivo: Registrar el historial continuo de viajes y capturar la fotografía milimétrica de sensores (Modo 02) ante cualquier falla para empoderar al conductor frente al taller.*
+
+| ID | Estado | Prioridad | Épica | Descripción de la Feature / Tarea | Criterio de Aceptación |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| **TUA-029** | `[x]` Done | 🔥 Crítica | `obd2-engine` | Implementar decodificador de **Modo 02 (Freeze Frame / Cuadro Congelado)** para PIDs `0202` (DTC), `0205` (Temp agua), `020C` (RPM), `020D` (Velocidad) y `0204` (Carga motor) con generador pericial en español | [`freezeFrameParser.ts`](./app-mobile/src/modules/obd2-engine/freezeFrameParser.ts) + Tests unitarios en [`engines.test.ts`](./app-mobile/src/__tests__/engines.test.ts) |
+| **TUA-030** | `[x]` Done | 🔥 Crítica | UI / Telemetría | Crear **Pantalla de Caja Negra & Viajes (`TelemetryTripScreen.tsx`)** y componente de **Curvas SVG Interactivas (`TelemetryChart.tsx`)** con selector de viajes, métricas de agua/batería/velocidad y botón de compartir reporte pericial | [`TelemetryTripScreen.tsx`](./app-mobile/src/screens/TelemetryTripScreen.tsx), [`TelemetryChart.tsx`](./app-mobile/src/components/TelemetryChart.tsx), [`App.tsx`](./app-mobile/App.tsx) |
+

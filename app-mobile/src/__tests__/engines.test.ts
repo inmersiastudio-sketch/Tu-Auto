@@ -18,6 +18,14 @@ import { MockOBD2Provider } from '../modules/obd2-engine/MockOBD2Provider';
 import { evaluateOilAndFluids } from '../modules/oil-tracker/oilEngine';
 import { evaluateThermalSystem } from '../modules/thermal-shield/thermalEngine';
 import { ejecutarChequeoMedico } from '../modules/medical-checkup/checkupEngine';
+import {
+  parseFreezeFrameDTCHex,
+  parseFreezeFrameCoolantHex,
+  parseFreezeFrameRpmHex,
+  parseFreezeFrameSpeedHex,
+  generarExplicacionFreezeFrame,
+} from '../modules/obd2-engine/freezeFrameParser';
+import { TripLoggerEngine } from '../modules/trip-logger/tripLoggerEngine';
 
 describe('Tu-Auto End-to-End Engineering & Security Test Suite (Sprints 1 to 4)', () => {
   describe('1. Decodificador Hexadecimal OBD2 (SAE J1979 / ELM327)', () => {
@@ -247,6 +255,44 @@ describe('Tu-Auto End-to-End Engineering & Security Test Suite (Sprints 1 to 4)'
 
       const correa = resultadoEtios.componentes.find((c) => c.id === 'correa_distribucion')!;
       expect(correa.aplicaAlModelo).toBe(false);
+    });
+  });
+
+  describe('9. Telemetría Avanzada: Freeze Frames Modo 02 y Trip Logger (Sprint 5)', () => {
+    it('decodifica el DTC causante de un Freeze Frame (PID 0202)', () => {
+      expect(parseFreezeFrameDTCHex('42 02 01 15')).toBe('P0115');
+      expect(parseFreezeFrameDTCHex('42020302>')).toBe('P0302');
+      expect(parseFreezeFrameDTCHex('42 02 00 00')).toBeNull();
+    });
+
+    it('decodifica los sensores congelados en el milisegundo exacto de la falla', () => {
+      // Temp de agua: 42 05 90 -> 144 - 40 = 104°C
+      expect(parseFreezeFrameCoolantHex('42 05 90')).toBe(104);
+      // RPM: 42 0C 24 B8 -> (36*256 + 184) / 4 = 2350 RPM
+      expect(parseFreezeFrameRpmHex('42 0C 24 B8')).toBe(2350);
+      // Velocidad: 42 0D 44 -> 68 km/h
+      expect(parseFreezeFrameSpeedHex('42 0D 44')).toBe(68);
+    });
+
+    it('construye una explicación pericial comprensible para defenderse en el taller', () => {
+      const explicacion = generarExplicacionFreezeFrame('P0115', 78, 2400, 104);
+      expect(explicacion).toContain('P0115');
+      expect(explicacion).toContain('autopista o ruta a 78 km/h');
+      expect(explicacion).toContain('104°C');
+      expect(explicacion).toContain('2.400 RPM');
+    });
+
+    it('graba muestras de telemetría y detecta anomalías térmicas en el viaje', () => {
+      const logger = new TripLoggerEngine();
+      logger.startTrip('Viaje de Prueba');
+      logger.recordSample({ timeOffsetSec: 0, coolantTempC: 85, voltageV: 14.1, speedKmh: 40, rpm: 1800 });
+      logger.recordSample({ timeOffsetSec: 60, coolantTempC: 103, voltageV: 14.0, speedKmh: 60, rpm: 2200 });
+
+      const active = logger.getActiveTrip();
+      expect(active).not.toBeNull();
+      expect(active?.maxCoolantTempC).toBe(103);
+      expect(active?.healthGrade).toBe('CRITICO');
+      expect(active?.healthSummary).toContain('Recalentamiento');
     });
   });
 });
