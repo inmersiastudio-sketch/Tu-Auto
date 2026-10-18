@@ -312,18 +312,6 @@ function buildCarBodyGroup(
   roofMesh.position.set(roofCenterX, roofY + 0.035, 0);
   carGroup.add(roofMesh);
 
-  // Pilares A (a los costados del parabrisas delantero)
-  [-1, 1].forEach((side) => {
-    const aPillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.035, 0.72, 8),
-      paintMaterial
-    );
-    const aX = bodyType === 'pickup' ? 0.64 : 0.52;
-    aPillar.position.set(aX, (beltlineY + roofY) / 2, side * (glassDepth / 2 + 0.02));
-    aPillar.rotation.z = -0.88;
-    carGroup.add(aPillar);
-  });
-
   // Zócalo inferior oscuro (Splitter / Faldones)
   const chassisLen =
     bodyType === 'pickup' ? 3.85 : bodyType === 'sedan' ? 3.62 : 3.28;
