@@ -21,6 +21,7 @@ import { CAR_PAINTS, CarPaintOption } from './src/components/Car3DShowcase';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { OnboardingModal } from './src/components/OnboardingModal';
 import { ComponentQuickSheet } from './src/components/ComponentQuickSheet';
 import { Colors, FontFamily } from './src/theme/colors';
@@ -28,6 +29,7 @@ import { Colors, FontFamily } from './src/theme/colors';
 type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
 
 export default function App() {
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabKey>('RESUMEN');
   const [activeScenario, setActiveScenario] = useState<ScenarioId>('NORMAL');
   const [showGarageBubble, setShowGarageBubble] = useState(false);
@@ -210,6 +212,18 @@ export default function App() {
       : undefined
   );
 
+  if (!hasCompletedOnboarding) {
+    return (
+      <OnboardingScreen
+        onComplete={(nuevoPerfil, nuevoColor) => {
+          setPerfil(nuevoPerfil);
+          setSelectedPaint(nuevoColor);
+          setHasCompletedOnboarding(true);
+        }}
+      />
+    );
+  }
+
   const hasAlertDot =
     chequeo.conteo.revisar > 0 || chequeo.conteo.pronto > 0;
 
@@ -253,6 +267,7 @@ export default function App() {
           onSelectPaint={setSelectedPaint}
           onSavePerfil={setPerfil}
           onClose={() => setShowGarageBubble(false)}
+          onReplayOnboarding={() => setHasCompletedOnboarding(false)}
         />
 
         <ComponentQuickSheet

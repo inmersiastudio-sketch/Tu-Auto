@@ -33,6 +33,7 @@ interface Props {
   onSelectPaint: (paint: CarPaintOption) => void;
   onSavePerfil: (nuevoPerfil: PerfilVehiculoUsuario) => void;
   onClose: () => void;
+  onReplayOnboarding?: () => void;
 }
 
 const KM_PRESETS = [25000, 42500, 56000, 68000, 95000];
@@ -44,6 +45,7 @@ export const OnboardingModal: React.FC<Props> = ({
   onSelectPaint,
   onSavePerfil,
   onClose,
+  onReplayOnboarding,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'ESTILO_MODELO' | 'KM_SERVICE'>(
     'ESTILO_MODELO'
@@ -414,6 +416,21 @@ export const OnboardingModal: React.FC<Props> = ({
         >
           <Text style={styles.primarySaveBtnText}>Guardar</Text>
         </TouchableOpacity>
+
+        {onReplayOnboarding && (
+          <TouchableOpacity
+            style={styles.replayLinkBtn}
+            onPress={() => {
+              onClose();
+              onReplayOnboarding();
+            }}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.replayLinkText}>
+              Reiniciar configuración paso a paso (Onboarding)
+            </Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
     </View>
   );
@@ -658,5 +675,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14.5,
     fontWeight: '600',
+  },
+  replayLinkBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  replayLinkText: {
+    fontFamily: FontFamily,
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });
