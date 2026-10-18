@@ -8,33 +8,33 @@ export const FontFamily =
     : 'System';
 
 export const Colors = {
-  // Superficies Limpias Daylight-First
-  bgPrimary: '#F8F7FC',
+  // Superficies Limpias Daylight-First (Estilo Slate / Ice Blue)
+  bgPrimary: '#F8FAFC',
   bgCard: '#FFFFFF',
-  bgElevated: '#F2F0FA',
-  bgContainer: '#ECE9F8',
-  bgHigh: '#E6E2F5',
-  bgHighest: '#DDD8F0',
+  bgElevated: '#F1F5F9',
+  bgContainer: '#E2E8F0',
+  bgHigh: '#E2E8F0',
+  bgHighest: '#CBD5E1',
 
-  // Hero Indigo Automotriz
-  heroIndigoStart: '#5B4FE8',
-  heroIndigoMid: '#4C3FD9',
-  heroIndigoEnd: '#3B2EC2',
-  heroIndigoDeep: '#1E1B4B',
+  // Hero y Gradientes Azul Eléctrico Automotriz
+  heroIndigoStart: '#3B82F6',
+  heroIndigoMid: '#2563EB',
+  heroIndigoEnd: '#1D4ED8',
+  heroIndigoDeep: '#0F172A',
 
-  // Marca y Acción Primaria
-  brandPrimary: '#4F46E5',
-  brandPrimaryDark: '#3730A3',
-  brandLight: '#E0E7FF',
+  // Marca y Acción Primaria (Sapphire / Electric Blue)
+  brandPrimary: '#2563EB',
+  brandPrimaryDark: '#1D4ED8',
+  brandLight: '#EFF6FF',
 
   // Tipografía Suave (Nunca negro puro)
-  textPrimary: '#1E1B4B',
-  textSecondary: '#52506E',
-  textMuted: '#85839E',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
   textOnHero: '#FFFFFF',
-  textSubtleOnHero: '#E0E7FF',
+  textSubtleOnHero: '#DBEAFE',
 
-  // Semáforo Amigable
+  // Semáforo Amigable (Independiente del color de marca)
   safeGreen: '#10B981',
   safeGreenDark: '#059669',
   safeGreenBg: '#ECFDF5',
@@ -54,7 +54,7 @@ export const Colors = {
   infoSky: '#0284C7',
   infoSkyBg: '#F0F9FF',
 
-  borderSubtle: 'rgba(199, 196, 215, 0.28)',
+  borderSubtle: 'rgba(203, 213, 225, 0.7)',
 } as const;
 
 export const COLORS = Colors;

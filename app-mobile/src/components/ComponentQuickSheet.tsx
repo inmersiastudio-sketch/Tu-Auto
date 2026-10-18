@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   workshopQuoteBox: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.brandLight,
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,

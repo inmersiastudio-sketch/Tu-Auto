@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
   },
   tactileModelCardActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.brandLight,
     borderColor: Colors.brandPrimary,
   },
   modelCardTop: {

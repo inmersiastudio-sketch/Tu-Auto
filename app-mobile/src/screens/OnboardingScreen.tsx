@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
   },
   modelCardActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.brandLight,
     borderColor: Colors.brandPrimary,
   },
   modelTopRow: {
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   optionBtnActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.brandLight,
     borderColor: Colors.brandPrimary,
   },
   radioCircle: {

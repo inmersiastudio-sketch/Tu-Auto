@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: Colors.brandLight,
     borderRadius: 12,
     padding: 11,
   },
