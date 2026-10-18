@@ -1,62 +1,70 @@
 /**
- * Paleta Oficial "Kinetic Telematics" (Google Stitch Export)
- * Cero ruido visual, Daylight-First (#FCF8FF), Hero Indigo (#4338CA) y Cero Emojis.
+ * Tipografía Geométrica Moderna y Amigable (Plus Jakarta Sans / Inter)
+ * Evita pesos 800/900 toscos en Windows y prioriza lectura limpia tipo iOS / Mercado Pago.
  */
-export const Colors = {
-  // Superficies Tonal Layering (No-Line Rule)
-  bgPrimary: '#FCF8FF', // Base Surface Canvas
-  bgCard: '#FFFFFF', // Surface Container Lowest (Tarjetas principales)
-  bgElevated: '#F6F2FF', // Surface Container Low (Fondos secundarios suaves)
-  bgContainer: '#F0ECFF', // Surface Container
-  bgHigh: '#E9E5FF', // Surface Container High (Píldoras de estado)
-  bgHighest: '#E3DFFF', // Surface Container Highest (Barras de progreso base)
+export const FontFamily =
+  typeof document !== 'undefined'
+    ? "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    : 'System';
 
-  // Hero Indigo Automotriz (Kinetic Telematics)
-  heroIndigoStart: '#6366F1',
-  heroIndigoMid: '#5148D7',
-  heroIndigoEnd: '#372ABF',
+export const Colors = {
+  // Superficies Limpias Daylight-First
+  bgPrimary: '#F8F7FC',
+  bgCard: '#FFFFFF',
+  bgElevated: '#F2F0FA',
+  bgContainer: '#ECE9F8',
+  bgHigh: '#E6E2F5',
+  bgHighest: '#DDD8F0',
+
+  // Hero Indigo Automotriz
+  heroIndigoStart: '#5B4FE8',
+  heroIndigoMid: '#4C3FD9',
+  heroIndigoEnd: '#3B2EC2',
   heroIndigoDeep: '#1E1B4B',
 
   // Marca y Acción Primaria
-  brandPrimary: '#4338CA', // Primary Container CTA
-  brandPrimaryDark: '#2A14B4', // Primary Deep Indigo
-  brandLight: '#E0E0FF', // Primary Fixed
+  brandPrimary: '#4F46E5',
+  brandPrimaryDark: '#3730A3',
+  brandLight: '#E0E7FF',
 
-  // Tipografía Editorial (Deep Indigo Charcoal — Nunca negro #000000 puro)
-  textPrimary: '#181445', // On-Surface
-  textSecondary: '#464554', // On-Surface-Variant
-  textMuted: '#777586', // Outline
+  // Tipografía Suave (Nunca negro puro)
+  textPrimary: '#1E1B4B',
+  textSecondary: '#52506E',
+  textMuted: '#85839E',
   textOnHero: '#FFFFFF',
-  textSubtleOnHero: '#E0E0FF',
+  textSubtleOnHero: '#E0E7FF',
 
-  // Semáforo Automotriz (Esmeralda, Ámbar y Coral)
+  // Semáforo Amigable
   safeGreen: '#10B981',
-  safeGreenDark: '#047857',
+  safeGreenDark: '#059669',
   safeGreenBg: '#ECFDF5',
   safeGreenBorder: '#A7F3D0',
 
   warnAmber: '#F59E0B',
   warnAmberDark: '#B45309',
-  warnAmberText: '#78350F',
+  warnAmberText: '#92400E',
   warnAmberBg: '#FFFBEB',
   warnAmberBorder: '#FDE68A',
 
   dangerRed: '#EF4444',
-  dangerRedDark: '#B91C1C',
+  dangerRedDark: '#DC2626',
   dangerRedBg: '#FEF2F2',
   dangerRedBorder: '#FECACA',
 
   infoSky: '#0284C7',
   infoSkyBg: '#F0F9FF',
 
-  borderSubtle: 'rgba(199, 196, 215, 0.25)', // Ghost Border (#C7C4D7 al 25%)
+  borderSubtle: 'rgba(199, 196, 215, 0.28)',
 } as const;
 
 export const COLORS = Colors;
 
 export const DEFAULT_EXCHANGE_RATE_ARS = 1200;
 
-export function formatARS(amountUsd: number, rateArs: number = DEFAULT_EXCHANGE_RATE_ARS): string {
+export function formatARS(
+  amountUsd: number,
+  rateArs: number = DEFAULT_EXCHANGE_RATE_ARS
+): string {
   const totalArs = Math.round(amountUsd * rateArs);
   return `$${totalArs.toLocaleString('es-AR')} ARS`;
 }

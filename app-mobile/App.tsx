@@ -23,7 +23,7 @@ import { ScannerScreen } from './src/screens/ScannerScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
 import { OnboardingModal } from './src/components/OnboardingModal';
 import { ComponentQuickSheet } from './src/components/ComponentQuickSheet';
-import { Colors } from './src/theme/colors';
+import { Colors, FontFamily } from './src/theme/colors';
 
 type TabKey = 'RESUMEN' | 'CHEQUEO' | 'TALLER';
 
@@ -39,7 +39,6 @@ export default function App() {
 
   const providerRef = useRef(new MockOBD2Provider());
 
-  // Estado del perfil del vehículo del usuario (funciona con o sin dongle)
   const [perfil, setPerfil] = useState<PerfilVehiculoUsuario>({
     modeloId: 'vw_gol_trend',
     anio: 2021,
@@ -87,6 +86,31 @@ export default function App() {
     activeDTCs: [],
     pendingDTCs: [],
   });
+
+  // Inyectar tipografía geométrica moderna Plus Jakarta Sans en Web
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const existing = document.getElementById('tu-auto-font-jakarta');
+      if (!existing) {
+        const link = document.createElement('link');
+        link.id = 'tu-auto-font-jakarta';
+        link.rel = 'stylesheet';
+        link.href =
+          'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
+        document.head.appendChild(link);
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+          * {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const provider = providerRef.current;
@@ -222,7 +246,6 @@ export default function App() {
           {activeTab === 'TALLER' && <WalletScreen chequeo={chequeo} />}
         </View>
 
-        {/* Burbuja Cuadrada Flotante 1: Mi Garage (Color del auto + Modelo + Km) */}
         <OnboardingModal
           visible={showGarageBubble}
           perfilActual={perfil}
@@ -232,14 +255,12 @@ export default function App() {
           onClose={() => setShowGarageBubble(false)}
         />
 
-        {/* Burbuja Cuadrada Flotante 2: Cargar o Actualizar un Componente */}
         <ComponentQuickSheet
           item={selectedComponentForSheet}
           onSelectPreset={handleQuickUpdateComponent}
           onClose={() => setSelectedComponentForSheet(null)}
         />
 
-        {/* Floating Bottom Pill Navigation Bar (3 Pestañas Mobile) */}
         <View style={styles.bottomNavWrapper} pointerEvents="box-none">
           <View style={styles.bottomNavPill}>
             <TouchableOpacity
@@ -251,7 +272,7 @@ export default function App() {
               activeOpacity={0.85}
             >
               <Car
-                size={20}
+                size={19}
                 color={
                   activeTab === 'RESUMEN' ? '#FFFFFF' : Colors.textSecondary
                 }
@@ -262,7 +283,7 @@ export default function App() {
                   activeTab === 'RESUMEN' && styles.tabLabelActive,
                 ]}
               >
-                Resumen
+                Mi Auto
               </Text>
             </TouchableOpacity>
 
@@ -276,7 +297,7 @@ export default function App() {
             >
               <View style={styles.iconWithBadge}>
                 <ClipboardCheck
-                  size={20}
+                  size={19}
                   color={
                     activeTab === 'CHEQUEO' ? '#FFFFFF' : Colors.textSecondary
                   }
@@ -311,7 +332,7 @@ export default function App() {
               activeOpacity={0.85}
             >
               <MessageSquareQuote
-                size={20}
+                size={19}
                 color={
                   activeTab === 'TALLER' ? '#FFFFFF' : Colors.textSecondary
                 }
@@ -322,7 +343,7 @@ export default function App() {
                   activeTab === 'TALLER' && styles.tabLabelActive,
                 ]}
               >
-                Guía Taller
+                Taller
               </Text>
             </TouchableOpacity>
           </View>
@@ -354,9 +375,9 @@ const styles = StyleSheet.create({
   },
   bottomNavWrapper: {
     position: 'absolute',
-    bottom: 18,
-    left: 20,
-    right: 20,
+    bottom: 16,
+    left: 18,
+    right: 18,
     alignItems: 'center',
   },
   bottomNavPill: {
@@ -364,13 +385,13 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderRadius: 999,
-    padding: 6,
+    padding: 5,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
     shadowColor: '#181445',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
     elevation: 6,
   },
   tabButton: {
@@ -378,25 +399,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 11,
+    gap: 6,
+    paddingVertical: 10,
     borderRadius: 999,
   },
   tabButtonActive: {
     backgroundColor: Colors.brandPrimary,
-    shadowColor: Colors.brandPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
   },
   tabLabel: {
+    fontFamily: FontFamily,
     color: Colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
   tabLabelActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   iconWithBadge: {
     position: 'relative',

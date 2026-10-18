@@ -17,7 +17,7 @@ import {
   ResumenChequeoMedico,
 } from '../modules/medical-checkup/checkupEngine';
 import { CheckupComponentCard } from '../components/CheckupComponentCard';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily } from '../theme/colors';
 
 interface Props {
   chequeo: ResumenChequeoMedico;
@@ -38,7 +38,6 @@ export const ScannerScreen: React.FC<Props> = ({
 }) => {
   const [filtro, setFiltro] = useState<FiltroKey>('TODOS');
 
-  // Si el modelo usa cadena en lugar de correa, ese ítem se oculta (aplicaAlModelo === false)
   const componentesAplicables = chequeo.componentes.filter(
     (c) => c.aplicaAlModelo
   );
@@ -61,10 +60,7 @@ export const ScannerScreen: React.FC<Props> = ({
     >
       {/* Top App Bar */}
       <View style={styles.topHeader}>
-        <View>
-          <Text style={styles.supHeader}>FICHA MÉDICA DEL VEHÍCULO</Text>
-          <Text style={styles.pageTitle}>Chequeo</Text>
-        </View>
+        <Text style={styles.pageTitle}>Chequeo</Text>
 
         <TouchableOpacity
           style={styles.vehiclePill}
@@ -73,26 +69,12 @@ export const ScannerScreen: React.FC<Props> = ({
         >
           <SlidersHorizontal size={13} color={Colors.brandPrimaryDark} />
           <Text style={styles.vehiclePillText}>
-            {chequeo.modelo.modelo} · {(chequeo.kmActuales / 1000).toFixed(1)}k km
+            {chequeo.modelo.modelo} · {(chequeo.kmActuales / 1000).toFixed(0)}k km
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Resumen Único Superior: "¿Cómo está mi auto?" */}
-      <View style={styles.summaryBanner}>
-        <Text style={styles.summaryTitle}>{chequeo.tituloResumen}</Text>
-        <Text style={styles.summarySub}>{chequeo.subtituloResumen}</Text>
-        {chequeo.modelo.esGenerico && (
-          <View style={styles.genericWarningRow}>
-            <Info size={14} color={Colors.warnAmberDark} />
-            <Text style={styles.genericWarningText}>
-              Intervalos de referencia general · Consultá el manual de tu auto.
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Filtros Rápidos con Relieve Táctil */}
+      {/* Filtros Rápidos */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[
@@ -124,7 +106,7 @@ export const ScannerScreen: React.FC<Props> = ({
               filtro === 'ATENCION' && styles.filterChipTextActive,
             ]}
           >
-            Pronto / Revisar ({chequeo.conteo.pronto + chequeo.conteo.revisar})
+            Atención ({chequeo.conteo.pronto + chequeo.conteo.revisar})
           </Text>
         </TouchableOpacity>
 
@@ -141,12 +123,11 @@ export const ScannerScreen: React.FC<Props> = ({
               filtro === 'SIN_DATOS' && styles.filterChipTextActive,
             ]}
           >
-            Sin datos ({chequeo.conteo.sinDatos})
+            Cargar ({chequeo.conteo.sinDatos})
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Si no tiene dongle conectado, botón simple para declarar si se prendió una luz en el tablero */}
       {!chequeo.dongleConectado && (
         <TouchableOpacity
           style={[
@@ -163,13 +144,12 @@ export const ScannerScreen: React.FC<Props> = ({
           )}
           <Text style={styles.declareLightText}>
             {luzTestigoDeclarada
-              ? 'Declaraste una luz encendida en el tablero (Tocar para quitar)'
-              : '¿Tenés alguna luz amarilla o roja prendida en el tablero? Tocá acá'}
+              ? 'Luz encendida en el tablero (Tocar para quitar)'
+              : '¿Se prendió una luz en el tablero? Tocá acá'}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Listado de Tarjetas de los Componentes */}
       {componentesFiltrados.map((item) => (
         <CheckupComponentCard
           key={item.id}
@@ -179,28 +159,14 @@ export const ScannerScreen: React.FC<Props> = ({
         />
       ))}
 
-      {/* Aclaración cuando el auto usa cadena de distribución y se ocultó la correa */}
       {chequeo.modelo.usaCadenaDistribucion && (
         <View style={styles.chainNoteBox}>
-          <Info size={16} color={Colors.brandPrimary} />
+          <Info size={15} color={Colors.brandPrimary} />
           <Text style={styles.chainNoteText}>
-            Nota sobre tu {chequeo.modelo.marca} {chequeo.modelo.modelo}: este
-            motor utiliza cadena de distribución metálica en lugar de correa de
-            goma, por eso ocultamos ese ítem de tus vencimientos periódicos.
+            Tu {chequeo.modelo.modelo} usa cadena metálica de distribución (no requiere cambio periódico).
           </Text>
         </View>
       )}
-
-      {/* Nota honesta sobre el alcance del chequeo */}
-      <View style={styles.honestyFooter}>
-        <Text style={styles.honestyTitle}>Sobre este chequeo preventivo</Text>
-        <Text style={styles.honestyDesc}>
-          Los estados etiquetados como "Estimado" se calculan según los
-          kilómetros, fechas cargadas y el plan de mantenimiento orientativo de
-          cada modelo. No reemplazan la revisión visual de un mecánico ante
-          ruidos o pérdidas de fluidos.
-        </Text>
-      </View>
     </ScrollView>
   );
 };
@@ -211,9 +177,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgPrimary,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 110,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 105,
   },
   topHeader: {
     flexDirection: 'row',
@@ -221,71 +187,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  supHeader: {
-    color: Colors.textSecondary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.9,
-  },
   pageTitle: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   vehiclePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: Colors.bgHigh,
+    backgroundColor: Colors.bgElevated,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#D6D0F5',
-    borderBottomWidth: 3,
-    borderBottomColor: '#C2B9EC',
   },
   vehiclePillText: {
+    fontFamily: FontFamily,
     color: Colors.brandPrimaryDark,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  summaryBanner: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1.5,
-    borderColor: '#E5E0FA',
-    borderBottomWidth: 4,
-    borderBottomColor: '#D0C9F0',
-  },
-  summaryTitle: {
-    color: Colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  summarySub: {
-    color: Colors.textSecondary,
     fontSize: 12,
-    marginTop: 3,
-  },
-  genericWarningRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    backgroundColor: Colors.warnAmberBg,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  genericWarningText: {
-    color: Colors.warnAmberDark,
-    fontSize: 11,
-    fontWeight: '700',
-    flex: 1,
+    fontWeight: '600',
   },
   filterRow: {
     flexDirection: 'row',
@@ -294,27 +216,25 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: '#E2DDF8',
-    borderBottomWidth: 3,
-    borderBottomColor: '#D0C9F0',
+    borderColor: Colors.borderSubtle,
   },
   filterChipActive: {
     backgroundColor: Colors.brandPrimary,
     borderColor: Colors.brandPrimary,
-    borderBottomColor: Colors.brandPrimaryDark,
   },
   filterChipText: {
+    fontFamily: FontFamily,
     color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '600',
   },
   declareLightRow: {
     flexDirection: 'row',
@@ -323,7 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
     borderRadius: 14,
     padding: 12,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
   },
@@ -332,44 +252,26 @@ const styles = StyleSheet.create({
     borderColor: Colors.dangerRedBorder,
   },
   declareLightText: {
+    fontFamily: FontFamily,
     flex: 1,
     color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
   chainNoteBox: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: '#EEF2FF',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 4,
   },
   chainNoteText: {
+    fontFamily: FontFamily,
     flex: 1,
     color: Colors.textPrimary,
     fontSize: 12,
-    lineHeight: 18,
-  },
-  honestyFooter: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
-  },
-  honestyTitle: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  honestyDesc: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    lineHeight: 16,
+    lineHeight: 17,
   },
 });

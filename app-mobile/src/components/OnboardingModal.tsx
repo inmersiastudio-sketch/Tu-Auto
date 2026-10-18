@@ -11,14 +11,9 @@ import {
 import {
   Car,
   Gauge,
-  Wrench,
   Check,
   CheckCircle2,
   X,
-  Bluetooth,
-  Smartphone,
-  AlertTriangle,
-  Palette,
 } from 'lucide-react-native';
 import {
   CATALOGO_MODELOS_ARG,
@@ -29,7 +24,7 @@ import {
   CarPaintOption,
   CarVectorIllustration,
 } from './Car3DShowcase';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily } from '../theme/colors';
 
 interface Props {
   visible: boolean;
@@ -81,8 +76,8 @@ export const OnboardingModal: React.FC<Props> = ({
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
-          damping: 19,
-          stiffness: 180,
+          damping: 20,
+          stiffness: 200,
           useNativeDriver: true,
         }),
       ]).start();
@@ -154,29 +149,22 @@ export const OnboardingModal: React.FC<Props> = ({
 
   return (
     <View style={styles.rootPortal}>
-      {/* Fondo Oscurecido (Backdrop Scrim) — Tocar afuera cierra la burbuja */}
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <Pressable style={styles.backdropPressable} onPress={onClose} />
       </Animated.View>
 
-      {/* Burbuja Cuadrada Flotante estilo iOS / Duolingo / Mercado Pago */}
       <Animated.View
         style={[
           styles.floatingBubble,
           { transform: [{ translateY: slideAnim }] },
         ]}
       >
-        {/* Drag Handle Pill superior */}
         <View style={styles.dragHandleWrap}>
           <View style={styles.dragHandlePill} />
         </View>
 
-        {/* Encabezado de la Burbuja */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.supTitle}>MI GARAGE INTERACTIVO</Text>
-            <Text style={styles.title}>Personalizá tu auto</Text>
-          </View>
+          <Text style={styles.title}>Mi Auto</Text>
           <TouchableOpacity
             style={styles.closeCircleBtn}
             onPress={onClose}
@@ -186,63 +174,44 @@ export const OnboardingModal: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Escenario 3D/SVG en Vivo dentro de la Burbuja + Selector de Colores */}
+        {/* Auto en vivo + Colores */}
         <View style={styles.livePreviewStage}>
-          <View style={styles.stageTopBadges}>
-            <View style={styles.stageModelPill}>
-              <Text style={styles.stageModelText}>
-                {modeloSeleccionado.marca} {modeloSeleccionado.modelo}
-              </Text>
-            </View>
-            <View style={styles.stageEnginePill}>
-              <Text style={styles.stageEngineText}>
-                {modeloSeleccionado.usaCadenaDistribucion
-                  ? 'Motor a Cadena'
-                  : `Correa c/${((modeloSeleccionado.intervalos.correaKm ?? 60000) / 1000).toFixed(0)}k km`}
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.stageModelText}>
+            {modeloSeleccionado.marca} {modeloSeleccionado.modelo} ·{' '}
+            {modeloSeleccionado.motor}
+          </Text>
 
           <View style={styles.carSvgWrap}>
-            <CarVectorIllustration paint={selectedPaint} height={106} />
+            <CarVectorIllustration paint={selectedPaint} height={96} />
           </View>
 
-          {/* Barra de Selección de Pintura en Vivo */}
-          <View style={styles.paintBar}>
-            <View style={styles.paintLabelRow}>
-              <Palette size={12} color="#E0E0FF" />
-              <Text style={styles.paintLabelText}>
-                Color: <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>{selectedPaint.name}</Text>
-              </Text>
-            </View>
-            <View style={styles.swatchesRow}>
-              {CAR_PAINTS.map((p) => {
-                const active = p.id === selectedPaint.id;
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      styles.colorCircleBtn,
-                      { backgroundColor: p.swatch },
-                      active && styles.colorCircleBtnActive,
-                    ]}
-                    onPress={() => onSelectPaint(p)}
-                    activeOpacity={0.8}
-                  >
-                    {active && (
-                      <Check
-                        size={14}
-                        color={p.id === 'crystal-white' ? '#1E1B4B' : '#FFFFFF'}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          <View style={styles.swatchesRow}>
+            {CAR_PAINTS.map((p) => {
+              const active = p.id === selectedPaint.id;
+              return (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[
+                    styles.colorCircleBtn,
+                    { backgroundColor: p.swatch },
+                    active && styles.colorCircleBtnActive,
+                  ]}
+                  onPress={() => onSelectPaint(p)}
+                  activeOpacity={0.8}
+                >
+                  {active && (
+                    <Check
+                      size={13}
+                      color={p.id === 'crystal-white' ? '#1E1B4B' : '#FFFFFF'}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
-        {/* Segmented Control (Estilo iOS / Mercado Pago) para no saturar */}
+        {/* Segmented Control */}
         <View style={styles.segmentedTrack}>
           <TouchableOpacity
             style={[
@@ -266,7 +235,7 @@ export const OnboardingModal: React.FC<Props> = ({
                 activeSubTab === 'ESTILO_MODELO' && styles.segmentedTextActive,
               ]}
             >
-              1. Modelo del auto
+              Modelo
             </Text>
           </TouchableOpacity>
 
@@ -292,12 +261,11 @@ export const OnboardingModal: React.FC<Props> = ({
                 activeSubTab === 'KM_SERVICE' && styles.segmentedTextActive,
               ]}
             >
-              2. Km y Service ({(kmActuales / 1000).toFixed(1)}k)
+              Kilómetros ({(kmActuales / 1000).toFixed(0)}k)
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Cuerpo Deslizable de la Burbuja */}
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -327,25 +295,18 @@ export const OnboardingModal: React.FC<Props> = ({
                         {m.marca}
                       </Text>
                       {active && (
-                        <CheckCircle2 size={15} color={Colors.brandPrimary} />
+                        <CheckCircle2 size={14} color={Colors.brandPrimary} />
                       )}
                     </View>
                     <Text style={styles.modelNameText}>{m.modelo}</Text>
-                    <Text style={styles.modelEngineSub}>
-                      {m.motor} ·{' '}
-                      {m.usaCadenaDistribucion ? 'Usa Cadena' : 'Usa Correa'}
-                    </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
           ) : (
             <View style={styles.kmServiceContainer}>
-              {/* Selección de Kilómetros Actuales */}
               <View style={styles.blockCard}>
-                <Text style={styles.blockTitle}>
-                  ¿Cuántos kilómetros tiene hoy?
-                </Text>
+                <Text style={styles.blockTitle}>Kilómetros actuales</Text>
                 <View style={styles.chipsWrap}>
                   {KM_PRESETS.map((val) => {
                     const active = kmActuales === val;
@@ -364,7 +325,7 @@ export const OnboardingModal: React.FC<Props> = ({
                             active && styles.tactileChipTextActive,
                           ]}
                         >
-                          {(val / 1000).toFixed(val === 42500 ? 1 : 0)} mil km
+                          {(val / 1000).toFixed(val === 42500 ? 1 : 0)}k km
                         </Text>
                       </TouchableOpacity>
                     );
@@ -372,44 +333,29 @@ export const OnboardingModal: React.FC<Props> = ({
                 </View>
               </View>
 
-              {/* Último Service de Aceite */}
               <View style={styles.blockCard}>
-                <View style={styles.blockTitleRow}>
-                  <Wrench size={14} color={Colors.brandPrimary} />
-                  <Text style={styles.blockTitle}>
-                    ¿Cuándo hiciste el último cambio de aceite?
-                  </Text>
-                </View>
-                <View style={styles.optionsCol}>
+                <Text style={styles.blockTitle}>Último cambio de aceite</Text>
+                <View style={styles.chipsWrap}>
                   {[
-                    { id: 'RECIEN', label: 'Hace poco (menos de 4 meses)' },
-                    { id: 'OCHO_MESES', label: 'Hace ~8 meses (ya se acerca)' },
-                    { id: 'MAS_DE_ANIO', label: 'Hace más de 1 año (vencido)' },
-                    {
-                      id: 'USADO_SIN_DATO',
-                      label: 'No me acuerdo / Lo compré usado',
-                    },
+                    { id: 'RECIEN', label: 'Hace poco' },
+                    { id: 'OCHO_MESES', label: 'Hace ~8 meses' },
+                    { id: 'MAS_DE_ANIO', label: 'Más de 1 año' },
+                    { id: 'USADO_SIN_DATO', label: 'No sé' },
                   ].map((opt) => {
                     const active = aceitePreset === opt.id;
                     return (
                       <TouchableOpacity
                         key={opt.id}
                         style={[
-                          styles.tactileOptionBtn,
-                          active && styles.tactileOptionBtnActive,
+                          styles.tactileChip,
+                          active && styles.tactileChipActive,
                         ]}
                         onPress={() => setAceitePreset(opt.id as any)}
                       >
-                        <CheckCircle2
-                          size={16}
-                          color={
-                            active ? Colors.brandPrimary : Colors.textMuted
-                          }
-                        />
                         <Text
                           style={[
-                            styles.tactileOptionText,
-                            active && styles.tactileOptionTextActive,
+                            styles.tactileChipText,
+                            active && styles.tactileChipTextActive,
                           ]}
                         >
                           {opt.label}
@@ -420,20 +366,14 @@ export const OnboardingModal: React.FC<Props> = ({
                 </View>
               </View>
 
-              {/* Pregunta de Correa si aplica al modelo */}
               {!modeloSeleccionado.usaCadenaDistribucion && (
-                <View style={styles.beltAlertBlock}>
-                  <View style={styles.blockTitleRow}>
-                    <AlertTriangle size={14} color={Colors.warnAmberDark} />
-                    <Text style={styles.beltAlertTitle}>
-                      ¿Se cambió la correa de distribución alguna vez?
-                    </Text>
-                  </View>
+                <View style={styles.blockCard}>
+                  <Text style={styles.blockTitle}>Correa de distribución</Text>
                   <View style={styles.chipsWrap}>
                     {[
-                      { id: 'DE_FABRICA', label: 'Todavía original' },
-                      { id: 'CAMBIADA_HACE_POCO', label: 'Sí, se cambió' },
-                      { id: 'NO_TENGO_IDEA', label: 'No tengo idea' },
+                      { id: 'DE_FABRICA', label: 'Original' },
+                      { id: 'CAMBIADA_HACE_POCO', label: 'Ya cambiada' },
+                      { id: 'NO_TENGO_IDEA', label: 'No sé' },
                     ].map((opt) => {
                       const active = correaPreset === opt.id;
                       return (
@@ -459,60 +399,16 @@ export const OnboardingModal: React.FC<Props> = ({
                   </View>
                 </View>
               )}
-
-              {/* Selector de Modo: Sin Dongle vs Con Dongle */}
-              <View style={styles.modeDualRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.modeMiniCard,
-                    !dongleConectado && styles.modeMiniCardActive,
-                  ]}
-                  onPress={() => setDongleConectado(false)}
-                >
-                  <Smartphone
-                    size={16}
-                    color={
-                      !dongleConectado
-                        ? Colors.brandPrimary
-                        : Colors.textSecondary
-                    }
-                  />
-                  <Text style={styles.modeMiniTitle}>Sin Dongle</Text>
-                  <Text style={styles.modeMiniSub}>Por km y manual</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.modeMiniCard,
-                    dongleConectado && styles.modeMiniCardActive,
-                  ]}
-                  onPress={() => setDongleConectado(true)}
-                >
-                  <Bluetooth
-                    size={16}
-                    color={
-                      dongleConectado
-                        ? Colors.brandPrimary
-                        : Colors.textSecondary
-                    }
-                  />
-                  <Text style={styles.modeMiniTitle}>Con Dongle OBD2</Text>
-                  <Text style={styles.modeMiniSub}>Mide agua y batería</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
         </ScrollView>
 
-        {/* Botón Táctil 3D Estilo Duolingo / Mercado Pago */}
         <TouchableOpacity
-          style={styles.duolingoPrimaryBtn}
+          style={styles.primarySaveBtn}
           onPress={handleConfirm}
           activeOpacity={0.85}
         >
-          <Text style={styles.duolingoPrimaryBtnText}>
-            Listo, guardar mi auto
-          </Text>
+          <Text style={styles.primarySaveBtnText}>Guardar</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -535,7 +431,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(14, 11, 41, 0.62)',
+    backgroundColor: 'rgba(14, 11, 41, 0.58)',
   },
   backdropPressable: {
     flex: 1,
@@ -544,19 +440,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgPrimary,
     marginHorizontal: 12,
     marginBottom: 14,
-    borderRadius: 32,
+    borderRadius: 28,
     paddingHorizontal: 18,
     paddingBottom: 18,
     paddingTop: 10,
-    maxHeight: '88%',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    borderBottomWidth: 5,
-    borderBottomColor: '#D6D1F5',
+    maxHeight: '86%',
     shadowColor: '#0F0A3C',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.32,
-    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 26,
     elevation: 16,
   },
   dragHandleWrap: {
@@ -564,8 +456,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dragHandlePill: {
-    width: 42,
-    height: 5,
+    width: 38,
+    height: 4,
     borderRadius: 999,
     backgroundColor: '#CFCBE6',
   },
@@ -573,109 +465,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  supTitle: {
-    color: Colors.brandPrimary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.9,
+    marginTop: 2,
+    marginBottom: 10,
   },
   title: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.4,
+    fontSize: 19,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   closeCircleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Colors.bgHigh,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   livePreviewStage: {
     backgroundColor: Colors.heroIndigoMid,
-    borderRadius: 22,
-    padding: 14,
+    borderRadius: 20,
+    padding: 12,
     marginBottom: 12,
-    borderBottomWidth: 4,
-    borderBottomColor: '#2E239E',
-  },
-  stageTopBadges: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  stageModelPill: {
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
   stageModelText: {
+    fontFamily: FontFamily,
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  stageEnginePill: {
-    backgroundColor: 'rgba(15, 10, 60, 0.45)',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  stageEngineText: {
-    color: '#E0E0FF',
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '600',
   },
   carSvgWrap: {
+    width: '100%',
     marginVertical: 2,
     alignItems: 'center',
   },
-  paintBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.14)',
-  },
-  paintLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  paintLabelText: {
-    color: '#E0E0FF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
   swatchesRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
+    marginTop: 4,
+    backgroundColor: 'rgba(15, 10, 60, 0.3)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   colorCircleBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderColor: 'rgba(255,255,255,0.4)',
   },
   colorCircleBtnActive: {
     borderColor: '#FFFFFF',
-    borderWidth: 2.5,
-    transform: [{ scale: 1.12 }],
+    transform: [{ scale: 1.15 }],
   },
   segmentedTrack: {
     flexDirection: 'row',
-    backgroundColor: Colors.bgHigh,
-    borderRadius: 14,
-    padding: 4,
+    backgroundColor: Colors.bgElevated,
+    borderRadius: 12,
+    padding: 3,
     marginBottom: 12,
   },
   segmentedTab: {
@@ -685,30 +537,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    borderRadius: 11,
+    borderRadius: 10,
   },
   segmentedTabActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#181445',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   segmentedText: {
+    fontFamily: FontFamily,
     color: Colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
   segmentedTextActive: {
     color: Colors.brandPrimaryDark,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   scrollArea: {
-    maxHeight: 230,
+    maxHeight: 210,
   },
   scrollContent: {
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   modelsGrid: {
     flexDirection: 'row',
@@ -718,17 +571,14 @@ const styles = StyleSheet.create({
   tactileModelCard: {
     width: '48%',
     backgroundColor: Colors.bgCard,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 11,
     borderWidth: 1.5,
-    borderColor: '#E2DDF8',
-    borderBottomWidth: 4,
-    borderBottomColor: '#D0C9F0',
+    borderColor: Colors.borderSubtle,
   },
   tactileModelCardActive: {
     backgroundColor: '#EEF2FF',
     borderColor: Colors.brandPrimary,
-    borderBottomColor: Colors.brandPrimaryDark,
   },
   modelCardTop: {
     flexDirection: 'row',
@@ -736,44 +586,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modelBrandText: {
+    fontFamily: FontFamily,
     color: Colors.textMuted,
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontSize: 10.5,
+    fontWeight: '600',
   },
   modelNameText: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  modelEngineSub: {
-    color: Colors.textSecondary,
-    fontSize: 10,
+    fontSize: 13.5,
     fontWeight: '600',
-    marginTop: 3,
+    marginTop: 2,
   },
   kmServiceContainer: {
     gap: 10,
   },
   blockCard: {
     backgroundColor: Colors.bgCard,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
   },
-  blockTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
   blockTitle: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '800',
-    marginBottom: 6,
+    fontSize: 12.5,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -783,114 +623,34 @@ const styles = StyleSheet.create({
   tactileChip: {
     paddingHorizontal: 11,
     paddingVertical: 7,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: Colors.bgElevated,
-    borderWidth: 1,
-    borderColor: '#DCD6F7',
-    borderBottomWidth: 3,
-    borderBottomColor: '#C7C0EB',
   },
   tactileChipActive: {
     backgroundColor: Colors.brandPrimary,
-    borderColor: Colors.brandPrimary,
-    borderBottomColor: Colors.brandPrimaryDark,
   },
   tactileChipText: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '500',
   },
   tactileChipTextActive: {
     color: '#FFFFFF',
-  },
-  optionsCol: {
-    gap: 6,
-  },
-  tactileOptionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 12,
-    backgroundColor: Colors.bgElevated,
-    borderWidth: 1,
-    borderColor: '#E2DDF8',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CFC8EE',
-  },
-  tactileOptionBtnActive: {
-    backgroundColor: '#EEF2FF',
-    borderColor: Colors.brandPrimary,
-    borderBottomColor: Colors.brandPrimaryDark,
-  },
-  tactileOptionText: {
-    color: Colors.textSecondary,
-    fontSize: 12,
     fontWeight: '600',
-    flex: 1,
   },
-  tactileOptionTextActive: {
-    color: Colors.textPrimary,
-    fontWeight: '800',
-  },
-  beltAlertBlock: {
-    backgroundColor: Colors.warnAmberBg,
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.warnAmberBorder,
-  },
-  beltAlertTitle: {
-    color: Colors.warnAmberText,
-    fontSize: 12,
-    fontWeight: '800',
-    flex: 1,
-  },
-  modeDualRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  modeMiniCard: {
-    flex: 1,
-    backgroundColor: Colors.bgCard,
-    borderRadius: 14,
-    padding: 11,
-    borderWidth: 1.5,
-    borderColor: '#E2DDF8',
-    borderBottomWidth: 3,
-    borderBottomColor: '#CFC8EE',
-  },
-  modeMiniCardActive: {
-    backgroundColor: '#EEF2FF',
-    borderColor: Colors.brandPrimary,
-    borderBottomColor: Colors.brandPrimaryDark,
-  },
-  modeMiniTitle: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-  modeMiniSub: {
-    color: Colors.textSecondary,
-    fontSize: 10,
-    marginTop: 1,
-  },
-  duolingoPrimaryBtn: {
+  primarySaveBtn: {
     backgroundColor: Colors.brandPrimary,
-    paddingVertical: 14,
-    borderRadius: 18,
+    borderRadius: 16,
+    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
-    borderBottomWidth: 4,
-    borderBottomColor: Colors.brandPrimaryDark,
   },
-  duolingoPrimaryBtnText: {
+  primarySaveBtnText: {
+    fontFamily: FontFamily,
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.2,
+    fontSize: 14.5,
+    fontWeight: '600',
   },
 });

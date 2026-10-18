@@ -19,7 +19,7 @@ import {
   ComponenteEvaluado,
   ComponenteId,
 } from '../modules/medical-checkup/checkupEngine';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily } from '../theme/colors';
 
 interface Props {
   item: ComponenteEvaluado | null;
@@ -48,8 +48,8 @@ export const ComponentQuickSheet: React.FC<Props> = ({
         }),
         Animated.spring(slideAnim, {
           toValue: 0,
-          damping: 19,
-          stiffness: 185,
+          damping: 20,
+          stiffness: 200,
           useNativeDriver: true,
         }),
       ]).start();
@@ -86,10 +86,8 @@ export const ComponentQuickSheet: React.FC<Props> = ({
 
         <View style={styles.headerRow}>
           <View style={styles.headerTitleCol}>
-            <Text style={styles.supTitle}>
-              {item.intervaloReferenciaTexto.toUpperCase()}
-            </Text>
             <Text style={styles.title}>{item.nombre}</Text>
+            <Text style={styles.supTitle}>{item.cuandoToca}</Text>
           </View>
           <TouchableOpacity style={styles.closeCircleBtn} onPress={onClose}>
             <X size={18} color={Colors.textPrimary} />
@@ -101,10 +99,8 @@ export const ComponentQuickSheet: React.FC<Props> = ({
         {item.queDecirleAlTaller && (
           <View style={styles.workshopQuoteBox}>
             <View style={styles.workshopQuoteHeader}>
-              <MessageSquareQuote size={15} color={Colors.brandPrimaryDark} />
-              <Text style={styles.workshopQuoteTitle}>
-                Qué decirle al mecánico:
-              </Text>
+              <MessageSquareQuote size={14} color={Colors.brandPrimaryDark} />
+              <Text style={styles.workshopQuoteTitle}>Qué pedir en el taller</Text>
             </View>
             <Text style={styles.workshopQuoteBody}>
               "{item.queDecirleAlTaller}"
@@ -112,23 +108,16 @@ export const ComponentQuickSheet: React.FC<Props> = ({
           </View>
         )}
 
-        <Text style={styles.promptTitle}>
-          ¿Cuándo se hizo el último cambio de {item.nombre.toLowerCase()}?
-        </Text>
+        <Text style={styles.promptTitle}>Actualizar último cambio</Text>
 
         <View style={styles.choicesList}>
           <TouchableOpacity
-            style={[styles.tactileChoiceCard, styles.choiceGreen]}
+            style={styles.tactileChoiceCard}
             onPress={() => handlePick('RECIEN_HECHO')}
             activeOpacity={0.8}
           >
-            <CheckCircle2 size={20} color={Colors.safeGreenDark} />
-            <View style={styles.choiceTextCol}>
-              <Text style={styles.choiceTitle}>Lo cambié hace poco</Text>
-              <Text style={styles.choiceSub}>
-                Queda marcado como "Bien" (recién hecho)
-              </Text>
-            </View>
+            <CheckCircle2 size={18} color={Colors.safeGreenDark} />
+            <Text style={styles.choiceTitle}>Lo cambié hace poco</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -136,27 +125,17 @@ export const ComponentQuickSheet: React.FC<Props> = ({
             onPress={() => handlePick('MITAD_VIDA')}
             activeOpacity={0.8}
           >
-            <Clock size={20} color={Colors.brandPrimary} />
-            <View style={styles.choiceTextCol}>
-              <Text style={styles.choiceTitle}>Va por la mitad de su vida</Text>
-              <Text style={styles.choiceSub}>
-                Alrededor del 50% del intervalo recomendado
-              </Text>
-            </View>
+            <Clock size={18} color={Colors.brandPrimary} />
+            <Text style={styles.choiceTitle}>Va por la mitad</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tactileChoiceCard, styles.choiceAmber]}
+            style={styles.tactileChoiceCard}
             onPress={() => handlePick('POR_VENCER')}
             activeOpacity={0.8}
           >
-            <AlertTriangle size={20} color={Colors.warnAmberDark} />
-            <View style={styles.choiceTextCol}>
-              <Text style={styles.choiceTitle}>Ya está por cumplir</Text>
-              <Text style={styles.choiceSub}>
-                Pasa a estado "Pronto" para que lo programes
-              </Text>
-            </View>
+            <AlertTriangle size={18} color={Colors.warnAmberDark} />
+            <Text style={styles.choiceTitle}>Ya está por vencer</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -164,15 +143,8 @@ export const ComponentQuickSheet: React.FC<Props> = ({
             onPress={() => handlePick('DESCONOCIDO')}
             activeOpacity={0.8}
           >
-            <HelpCircle size={20} color={Colors.textSecondary} />
-            <View style={styles.choiceTextCol}>
-              <Text style={styles.choiceTitle}>
-                No tengo idea / Lo compré usado
-              </Text>
-              <Text style={styles.choiceSub}>
-                Te sugiere hacerlo revisar por precaución
-              </Text>
-            </View>
+            <HelpCircle size={18} color={Colors.textSecondary} />
+            <Text style={styles.choiceTitle}>No sé / Lo compré usado</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -196,7 +168,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(14, 11, 41, 0.60)',
+    backgroundColor: 'rgba(14, 11, 41, 0.56)',
   },
   backdropPressable: {
     flex: 1,
@@ -205,18 +177,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgPrimary,
     marginHorizontal: 12,
     marginBottom: 14,
-    borderRadius: 32,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
     paddingTop: 10,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 5,
-    borderBottomColor: '#D6D1F5',
     shadowColor: '#0F0A3C',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.32,
-    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 26,
     elevation: 16,
   },
   dragHandleWrap: {
@@ -224,8 +192,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dragHandlePill: {
-    width: 42,
-    height: 5,
+    width: 38,
+    height: 4,
     borderRadius: 999,
     backgroundColor: '#CFCBE6',
   },
@@ -233,106 +201,92 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 8,
   },
   headerTitleCol: {
     flex: 1,
     paddingRight: 10,
   },
-  supTitle: {
-    color: Colors.brandPrimary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.7,
-  },
   title: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  supTitle: {
+    fontFamily: FontFamily,
+    color: Colors.brandPrimary,
+    fontSize: 12.5,
+    fontWeight: '600',
     marginTop: 2,
   },
   closeCircleBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Colors.bgHigh,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.bgElevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
   explanationText: {
+    fontFamily: FontFamily,
     color: Colors.textSecondary,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
     marginBottom: 12,
   },
   workshopQuoteBox: {
     backgroundColor: '#EEF2FF',
-    borderRadius: 16,
-    padding: 13,
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
   },
   workshopQuoteHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   workshopQuoteTitle: {
+    fontFamily: FontFamily,
     color: Colors.brandPrimaryDark,
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 11.5,
+    fontWeight: '600',
   },
   workshopQuoteBody: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 12,
-    fontStyle: 'italic',
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '500',
     lineHeight: 17,
   },
   promptTitle: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 10,
+    fontFamily: FontFamily,
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   choicesList: {
-    gap: 8,
+    gap: 7,
   },
   tactileChoiceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     backgroundColor: Colors.bgCard,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    borderWidth: 1.5,
-    borderColor: '#E2DDF8',
-    borderBottomWidth: 4,
-    borderBottomColor: '#CFC8EE',
-  },
-  choiceGreen: {
-    borderColor: Colors.safeGreenBorder,
-    borderBottomColor: '#6EE7B7',
-  },
-  choiceAmber: {
-    borderColor: Colors.warnAmberBorder,
-    borderBottomColor: '#FCD34D',
-  },
-  choiceTextCol: {
-    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   choiceTitle: {
+    fontFamily: FontFamily,
     color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  choiceSub: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 13.5,
+    fontWeight: '600',
   },
 });
